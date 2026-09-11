@@ -7,13 +7,24 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { ETAPAS_DO_ADMIN, mapEtapaCircuito } from '@/lib/circuito';
+import {
+    ORIGENS_REDE, ORIGENS_IMOBILIARIA, rotuloOrigem, CARTEIRA_IMOBILIARIA, CARTEIRA_REDE, type Carteira,
+} from '@/lib/funilVendas';
 
-const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
-type OrigemLead = typeof ORIGEM_OPCOES[number];
+/**
+ * As origens que o modal oferece dependem de ONDE o lead está nascendo:
+ *   · no CRM da rede: o que o corretor traz (networking, indicação, rua, plantão…);
+ *   · no CRM da casa: o que a imobiliária traz (propaganda, ligação ativa, site, portal…).
+ * O lead grava a carteira — é ela que decide em qual CRM ele mora e se o
+ * circuito cobra (na rede, agendar é opcional).
+ */
+type OrigemLead = string;
 
 interface NewLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
+    /** em qual carteira o lead nasce (padrão: a da casa) */
+    carteira?: Carteira;
 }
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -22,15 +33,18 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
+export default function NewLeadModal({ isOpen, onClose, carteira = CARTEIRA_IMOBILIARIA }: NewLeadModalProps) {
     const router = useRouter();
     const { currentUser, userData, isEspelhoDemo } = useContext(AuthContext);
     // Etapa não se escolhe: todo lead nasce na primeira etapa do funil e o circuito conduz dali
     const { stages } = usePipelineStages();
+    const ehRede = carteira === CARTEIRA_REDE;
+    const ORIGEM_OPCOES: readonly string[] = ehRede ? ORIGENS_REDE : ORIGENS_IMOBILIARIA;
+    const origemPadrao: OrigemLead = ORIGEM_OPCOES[0];
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [origem, setOrigem] = useState<OrigemLead>('Networking');
+    const [origem, setOrigem] = useState<OrigemLead>(origemPadrao);
     const [origemOutros, setOrigemOutros] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -41,11 +55,11 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             setName('');
             setPhone('');
             setEmail('');
-            setOrigem('Networking');
+            setOrigem(origemPadrao);
             setOrigemOutros('');
             setError('');
         }
-    }, [isOpen]);
+    }, [isOpen, origemPadrao]);
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // 1. Limpa tudo que não for dígito
@@ -100,11 +114,12 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
         setIsLoading(true);
         setError('');
 
+        const detalhe = origemOutros.trim();
         const origemFinal = origem === 'Outros'
-            ? origemOutros.trim()
+            ? detalhe
             : origem === 'Propaganda'
-                ? `Propaganda · ${origemOutros.trim()}`
-                : origem;
+                ? `Propaganda · ${detalhe}`
+                : detalhe ? `${origem} · ${detalhe}` : origem;
 
         try {
             const leadsCollectionRef = collection(db, 'leads');
@@ -177,6 +192,8 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 etapa: stages[0] ?? '',
                 origem: origemFinal,
                 origemTipo: origem, // guarda a opção escolhida (ex: 'Outros') para relatórios
+                // a carteira decide em qual CRM ele mora — e se o circuito cobra
+                carteira,
                 ...(origem === 'Outros' && { origemOutros: origemOutros.trim() }),
                 ...(origem === 'Propaganda' && { origemPropaganda: origemOutros.trim() }),
                 createdAt: serverTimestamp(),
@@ -215,7 +232,12 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 <button onClick={onClose} className="absolute top-4 right-4 text-text-secondary hover:text-[#FF5C7E] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-6">Cadastrar Novo Lead</h2>
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-1">Cadastrar Novo Lead</h2>
+                <p className="text-[11px] text-text-secondary mb-5">
+                    {ehRede
+                        ? <>Nasce na <b className="text-[#FFE9A6]">sua rede</b> — cliente seu, agenda opcional.</>
+                        : <>Nasce no CRM da <b className="text-white">casa</b> — o circuito conduz o atendimento.</>}
+                </p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="name" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Nome *</label>
@@ -244,22 +266,28 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                                         className="sr-only peer"
                                     />
                                     <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${origem === op ? 'bg-[#FF1E56]/15 text-[#FF9EB5] border-[#FF3364]/60 font-semibold shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08] hover:border-white/20'}`}>
-                                        {op}
+                                        {rotuloOrigem(op)}
                                     </span>
                                 </label>
                             ))}
                         </div>
-                        {(origem === 'Outros' || origem === 'Propaganda') && (
+                        {(origem === 'Outros' || origem === 'Propaganda' || origem === 'Plantão' || origem === 'Indicação') && (
                             <div className="mt-3 p-3 rounded-xl border border-white/[0.08] bg-white/[0.03]">
                                 <label htmlFor="origem-outros" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">
-                                    {origem === 'Propaganda' ? 'De qual propaganda veio?' : 'Especifique a origem'}
+                                    {origem === 'Propaganda' ? 'De qual propaganda veio?'
+                                        : origem === 'Plantão' ? 'Qual plantão? (opcional)'
+                                        : origem === 'Indicação' ? 'Quem indicou? (opcional)'
+                                        : 'Especifique a origem'}
                                 </label>
                                 <input
                                     id="origem-outros"
                                     type="text"
                                     value={origemOutros}
                                     onChange={(e) => setOrigemOutros(e.target.value)}
-                                    placeholder={origem === 'Propaganda' ? 'Ex: Campanha Barra Velha — Instagram' : 'Ex: Indicação do parceiro, Site...'}
+                                    placeholder={origem === 'Propaganda' ? 'Ex: Campanha Barra Velha — Instagram'
+                                        : origem === 'Plantão' ? 'Ex: Plantão Orla da Barra — sábado'
+                                        : origem === 'Indicação' ? 'Ex: indicação da Maria (cliente)'
+                                        : 'Ex: parceiro, evento...'}
                                     className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 text-white placeholder-white/30"
                                 />
                             </div>

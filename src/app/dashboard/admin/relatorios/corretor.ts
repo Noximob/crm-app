@@ -23,6 +23,7 @@ import {
 } from '@/lib/circuito';
 import { msOf, type RelLead, type RelCorretor, type AtividadeLead, type RelVenda, type LeadDistRow } from './logic';
 import { periodoAnterior, serieSemanas, type PeriodoAnalise } from './periodo';
+import { contaNaDisciplina } from '@/lib/funilVendas';
 
 const DIA = 24 * 60 * 60 * 1000;
 const HORA = 3_600_000;
@@ -478,8 +479,11 @@ export function computeAnalise(
     }
 
     // ---- disciplina ----
+    // Só a carteira da CASA entra: na rede do corretor e na gaveta, agendar é
+    // opcional — tarefa atrasada ali não é dívida com a casa.
     let tarefasNoPrazo = 0, tarefasAtrasadas = 0, vencidasAgora = 0;
     for (const l of meus) {
+      if (!contaNaDisciplina(l)) continue;
       const at = atividade?.get(l.id);
       if (!at) continue;
       for (const t of at.tarefas) {

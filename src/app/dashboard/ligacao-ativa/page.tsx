@@ -374,6 +374,7 @@ export default function LigacaoAtivaPage() {
         etapa: stages[0] ?? '',
         origem: `Ligação Ativa · ${listaNome}`,
         origemTipo: 'Ligação',
+        carteira: 'imobiliaria', // lista fria é da casa — cobrado pelo circuito
         createdAt: serverTimestamp(),
         tarefasPendentes: [],
         anotacoes: anotacoesFinais,

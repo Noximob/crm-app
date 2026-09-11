@@ -23,6 +23,10 @@ import {
 // ── Tipos crus ──────────────────────────────────────────────────────────────
 export interface RelLead {
   id: string; userId?: string; etapa?: string; origem?: string; origemTipo?: string;
+  /** 'imobiliaria' | 'rede' — a rede não conta na disciplina (agendar lá é opcional) */
+  carteira?: string;
+  /** guardado na gaveta de Interesse futuro — fora da disciplina */
+  guardado?: boolean;
   anotacoes?: string; qualificacao?: Record<string, string[]>;
   createdAt?: unknown; vendaEm?: unknown; // valor da venda mora em /vendas (não no lead — leads é público pra TV)
   descartadoEm?: unknown; descartadoMotivo?: string;

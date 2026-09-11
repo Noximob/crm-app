@@ -76,7 +76,28 @@ export interface DemoLead {
   descartadoMotivo?: string;
   /** Estado do circuito: tentativas de contato e desde quando está na etapa atual */
   circuito?: { tentativas: number; desde: Timestamp };
+  /** a opção de origem escolhida (Propaganda, Ligação, Networking, Plantão…) */
+  origemTipo?: string;
+  origem?: string;
+  /** 'imobiliaria' | 'rede' */
+  carteira?: string;
+  /** guardado na gaveta de Interesse futuro */
+  guardado?: boolean;
 }
+
+/**
+ * De onde cada lead demo veio — e em qual carteira mora. A cada 5, um é da
+ * rede do corretor (networking, plantão, indicação); os demais são da casa.
+ */
+const ORIGEM_PLAN: { origemTipo: string; origem: string; carteira: 'imobiliaria' | 'rede' }[] = [
+  { origemTipo: 'Propaganda', origem: 'Propaganda · Lançamento Vista Mar', carteira: 'imobiliaria' },
+  { origemTipo: 'Ligação', origem: 'Ligação Ativa · Feirão Litoral', carteira: 'imobiliaria' },
+  { origemTipo: 'Networking', origem: 'Networking', carteira: 'rede' },
+  { origemTipo: 'Propaganda', origem: 'Propaganda · Campanha Barra Velha', carteira: 'imobiliaria' },
+  { origemTipo: 'Plantão', origem: 'Plantão · Orla da Barra — sábado', carteira: 'rede' },
+  { origemTipo: 'Disparo de msg', origem: 'Disparo de msg', carteira: 'imobiliaria' },
+  { origemTipo: 'Indicação', origem: 'Indicação · cliente Maria', carteira: 'rede' },
+];
 
 // Etapas do circuito (nomes explícitos — o funil tem 8 casas agora)
 const [ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
@@ -234,6 +255,11 @@ function buildDemoLeads(): DemoLead[] {
       descartados++;
     }
     if (CIRCUITO_DEMO[i]) lead.circuito = CIRCUITO_DEMO[i];
+    // origem e carteira: os 5 primeiros ficam na casa (são os que o tour usa)
+    const orig = i < 5 ? ORIGEM_PLAN[0] : ORIGEM_PLAN[i % ORIGEM_PLAN.length];
+    lead.origemTipo = orig.origemTipo; lead.origem = orig.origem; lead.carteira = orig.carteira;
+    // dois leads da casa guardados na gaveta — pra ver a coluna com gente dentro
+    if ((i === 9 || i === 14) && orig.carteira === 'imobiliaria' && !terminal && etapa !== ETAPA_BOLSAO) lead.guardado = true;
     leads.push(lead);
   }
   return leads;

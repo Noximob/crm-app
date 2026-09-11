@@ -62,7 +62,16 @@ export interface AcaoCircuito {
 export type EstadoFluxo =
   | { t: 'entrada' }
   | { t: 'ligar' }
-  | { t: 'proximaAcao'; concluirTaskId?: string; cancelarTaskId?: string; contato?: boolean }
+  | {
+      t: 'proximaAcao';
+      concluirTaskId?: string;
+      cancelarTaskId?: string;
+      contato?: boolean;
+      /** veio do "Remarcar" de uma tarefa — a ação pode ser trocada, não só a data */
+      remarcando?: boolean;
+      /** a ação pré-selecionada (o tipo da tarefa que está sendo remarcada) */
+      acaoInicial?: string;
+    }
   | {
       t: 'quando';
       concluirTaskId?: string;
@@ -156,6 +165,24 @@ export function perguntaDoLead(
   candidatos.sort((a, b) => a.urgencia - b.urgencia);
   return candidatos.find(c => c.pendente) ?? candidatos[0];
 }
+
+/** As ações do "Próxima ação", em três grupos: falar · marcar · avançar. */
+const ACAO_PRODUTO = '🔎 Buscar imóvel pra oferecer';
+const ACAO_PROPOSTA = '🤝 Apresentar proposta';
+const GRUPOS_ACAO: { titulo: string; itens: readonly string[] }[] = [
+  { titulo: 'Falar', itens: ['Ligar', 'WhatsApp'] },
+  { titulo: 'Marcar', itens: ['Marcar meet', 'Marcar visita'] },
+  { titulo: 'Avançar', itens: [ACAO_PRODUTO, ACAO_PROPOSTA] },
+];
+/** O tipo de uma tarefa → a ação equivalente (pra pré-selecionar ao remarcar). */
+const acaoDoTipo = (tipo?: string): string | undefined => ({
+  'Ligação': 'Ligar', 'WhatsApp': 'WhatsApp', 'Meet': 'Marcar meet', 'Visita': 'Marcar visita', 'Produto': ACAO_PRODUTO,
+} as Record<string, string>)[tipo || ''];
+/** Como cada ação aparece no botão de confirmar ("Agendar ligação ✓"). */
+const nomeCurtoAcao = (a: string): string => ({
+  'Ligar': 'ligação', 'WhatsApp': 'WhatsApp', 'Marcar meet': 'meet', 'Marcar visita': 'visita',
+  [ACAO_PRODUTO]: 'busca de imóvel', [ACAO_PROPOSTA]: 'proposta',
+} as Record<string, string>)[a] || a;
 
 /** Motivos do "Re-Qualificar" (a jornada reinicia — o negócio de antes não vingou). */
 const MOTIVOS_RECOMECO = ['Negociação caiu', 'Desistiu do imóvel', 'Visita/meet não vingou', 'Mudou a busca', 'Outro'] as const;
@@ -327,6 +354,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
     setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setObsStr(''); setAviso('');
     setVendaVal(0); setVendaEmp(''); setVendaTipo('lancamento'); setVendaOrigem('');
   }, [estado.t]);
+  // Remarcando: a ação da tarefa já vem marcada — o corretor troca se quiser.
+  // (declarado DEPOIS do reset acima, pra vencer ele no mesmo commit)
+  useEffect(() => {
+    if (estado.t === 'proximaAcao' && estado.acaoInicial) setAcaoSel(estado.acaoInicial);
+  }, [estado]);
 
   // Nome COMPLETO nos pop-ups — pedido do usuário (só o primeiro nome confundia)
   const nomeCliente = (nome || 'o cliente').trim();
@@ -448,8 +480,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         const m = estado;
         // Rótulos claros: "buscar imóvel" = tarefa SUA de garimpar opções;
         // "apresentar proposta" = cliente pronto → lead vai pra etapa Negociação.
-        const ACAO_PRODUTO = '🔎 Buscar imóvel pra oferecer';
-        const ACAO_PROPOSTA = '🤝 Apresentar proposta';
+        const tarefaRemarcada = m.remarcando && m.cancelarTaskId ? taskDe(m.cancelarTaskId) : undefined;
         const executaAcao = async () => {
           if (!acaoSel) {
             setAviso('⚠️ O sistema não deixa concluir sem escolher ação + quando.');
@@ -484,6 +515,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           const tipoCancelado = m.cancelarTaskId ? taskDe(m.cancelarTaskId)?.type : undefined;
           if (tipoCancelado && tipoCancelado === a.tipo && (a.tipo === TIPO_TAREFA_MEET || a.tipo === TIPO_TAREFA_VISITA)) {
             a.inter = `📌 ${a.tipo} remarcad${a.tipo === TIPO_TAREFA_MEET ? 'o' : 'a'}`;
+          } else if (m.remarcando && tipoCancelado) {
+            // remarcou TROCANDO a ação (era ligação, virou WhatsApp) — a linha do tempo conta a história
+            a.inter = tipoCancelado === a.tipo ? `📌 ${a.tipo} remarcad${a.tipo === 'Ligação' ? 'a' : 'o'}` : `📌 Remarcado: ${tipoCancelado} → ${a.tipo}`;
           }
           const ok = await executar({
             novaEtapa: a.etapa,
@@ -496,28 +530,53 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           });
           if (ok) fecha(`✓ ${nomeCliente} registrado. Próxima ação: ${a.toast} ${quandoLabel(d!)}.`);
         };
+        // Dois andares: primeiro O QUE (três grupos), depois QUANDO — o
+        // seletor de data só aparece com a ação escolhida, senão a tela vira
+        // uma parede de chips e o corretor não sabe por onde começar.
+        const rotuloBotao = !acaoSel
+          ? 'Escolha a ação'
+          : acaoSel === ACAO_PROPOSTA
+            ? 'Ir pra proposta →'
+            : `${m.remarcando ? 'Remarcar' : 'Agendar'}: ${nomeCurtoAcao(acaoSel)} ✓`;
         return {
-          bar: 'Próxima ação',
+          bar: m.remarcando ? '🕐 Remarcar' : 'Próxima ação',
           body: (
             <>
-              Qual o próximo passo com {b(nomeCliente)}?
-              <small>Anotações e qualificação ficam no painel ao lado — preenche lá enquanto conversa. →</small>
-              <Chips
-                itens={['Ligar', 'WhatsApp', 'Marcar meet', 'Marcar visita', ACAO_PRODUTO, ACAO_PROPOSTA]}
-                sel={acaoSel ? [acaoSel] : []}
-                onSel={v => { setAcaoSel(v); setAviso(''); }}
-              />
+              {m.remarcando && tarefaRemarcada ? (
+                <>
+                  Remarcando {b(tarefaRemarcada.description)}.
+                  <small>Pode trocar a ação — ex.: era ligação, vira WhatsApp. A tarefa antiga é cancelada e a nova entra no lugar.</small>
+                </>
+              ) : (
+                <>
+                  Qual o próximo passo com {b(nomeCliente)}?
+                  <small>Anotações e qualificação ficam no painel ao lado — preenche lá enquanto conversa. →</small>
+                </>
+              )}
+              <div className="mt-2 space-y-1.5">
+                {GRUPOS_ACAO.map(g => (
+                  <div key={g.titulo} className="flex flex-wrap items-center gap-x-2">
+                    <span className="w-14 shrink-0 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{g.titulo}</span>
+                    <Chips itens={g.itens} sel={acaoSel ? [acaoSel] : []} onSel={v => { setAcaoSel(v); setAviso(''); }} />
+                  </div>
+                ))}
+              </div>
               {acaoSel === ACAO_PRODUTO && (
                 <small>🔎 Cria uma tarefa <b className="text-white">sua</b>: garimpar opções e voltar pro cliente com imóvel na mão.</small>
               )}
               {acaoSel === ACAO_PROPOSTA && (
                 <small>🤝 O cliente já escolheu o imóvel: o lead vai pra <b className="text-white">Negociação</b> e o próximo passo é definir quando sai a resposta da proposta.</small>
               )}
-              {acaoSel !== ACAO_PROPOSTA && (<>Quando?{seletorQuando()}</>)}
+              {acaoSel && acaoSel !== ACAO_PROPOSTA && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">Quando</span>
+                  {seletorQuando()}
+                </div>
+              )}
               {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
           ),
-          btns: [{ t: executando ? 'Registrando…' : 'Concluir ✓', c: 'primary', f: executaAcao }],
+          btns: [{ t: executando ? 'Registrando…' : rotuloBotao, c: 'primary', f: executaAcao }],
         };
       }
 
@@ -600,7 +659,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             ),
             btns: [
               { t: ehProduto ? 'Achei! Falar com o cliente ✓' : 'Feito ✓ — e o próximo passo?', c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
-              { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
+              { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.taskId, remarcando: true, acaoInicial: acaoDoTipo(task?.type) }) },
             ],
           };
         }
@@ -615,7 +674,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           btns: [
             { t: `✅ Falei com ${nomeCliente}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId, contato: true }) },
             { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
-            { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
+            // Remarcar abre o "Próxima ação" com esta ação já marcada — dá pra
+            // trocar (ligação → WhatsApp) e não só mudar a data
+            { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.taskId, remarcando: true, acaoInicial: acaoDoTipo(task?.type) }) },
           ],
         };
       }

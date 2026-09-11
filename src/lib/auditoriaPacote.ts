@@ -12,6 +12,7 @@
  *   - Tempo se mede em HORÁRIO ÚTIL (ver lib/auditoria). O relógio não corre
  *     de madrugada.
  */
+import { contaNaDisciplina } from '@/lib/funilVendas';
 import {
   mapEtapaCircuito, etapaIndex, ETAPAS_CIRCUITO, ehInteresseFuturo,
   ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO,
@@ -43,6 +44,10 @@ export interface LeadAud {
   circuito?: { desde?: unknown; tentativas?: number; contatosFeitos?: number; primeiroContatoEm?: unknown; tentativasAtePrimeiroContato?: number };
   etapasHist?: { de?: string; para?: string; em?: unknown; porNome?: string }[];
   tarefasPendentes?: { id?: string; description?: string; type?: string; dueDate?: unknown }[];
+  /** 'imobiliaria' | 'rede' — a rede não conta na disciplina */
+  carteira?: string;
+  /** guardado na gaveta de Interesse futuro — fora da disciplina */
+  guardado?: boolean;
   [k: string]: unknown;
 }
 
@@ -1006,7 +1011,8 @@ export function computarPanorama(
     // tarefas: em aberto agora, e as que ele fez com atraso dentro da janela.
     // SÓ de lead vivo: tarefa pendente em lead descartado ou fechado não é
     // trabalho em aberto, é resíduo — e contava como atraso do corretor.
-    for (const t of (ativo ? (at?.tarefas || []) : [])) {
+    // E só da carteira da CASA: na rede e na gaveta, agendar é opcional.
+    for (const t of (ativo && contaNaDisciplina(l) ? (at?.tarefas || []) : [])) {
       if (t.dueMs <= 0) continue;
       const concl = /conclu/i.test(t.status), canc = /cancel/i.test(t.status);
       if (!concl && !canc && horasUteisEntre(t.dueMs, agora, d.horarioUtil) > atrasoH) p.tarefas_atrasadas_24h++;

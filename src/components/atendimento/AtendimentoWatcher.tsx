@@ -25,6 +25,7 @@ import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { CADENCIAS_PADRAO, carregarCadencias, type CadenciasFunil } from '@/lib/circuito';
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { toJsDate, type TarefaPendente } from '@/lib/leadTasks';
+import { contaNaDisciplina } from '@/lib/funilVendas';
 import { showToast } from '@/components/ui/toast';
 import AtendimentoOverlay, { perguntaDoLead, type AcaoCircuito, type EstadoFluxo } from './AtendimentoOverlay';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
@@ -43,6 +44,11 @@ interface LeadDoc {
   anotacoes?: string;
   /** Marcado pelo corretor: lead que o gerente acompanha e leva pra reunião. */
   importante?: boolean;
+  /** 'imobiliaria' | 'rede' — a rede não é cobrada pelo vigia */
+  carteira?: string;
+  origemTipo?: string;
+  /** guardado na gaveta de Interesse futuro — não é cobrado */
+  guardado?: boolean;
 }
 
 interface Candidato {
@@ -140,6 +146,9 @@ export default function AtendimentoWatcher() {
     void tick;
     const lista: Candidato[] = [];
     for (const lead of leads) {
+      // A rede do corretor e a gaveta de Interesse futuro não são cobradas:
+      // agendar ali é opcional, então não há pergunta vencida a fazer.
+      if (!contaNaDisciplina(lead)) continue;
       const etapa = normalizeEtapa(lead.etapa);
       const criadoMs = toJsDate(lead.createdAt)?.getTime() ?? 0;
       const p = perguntaDoLead(etapa, lead.tarefasPendentes || [], cadencias, agora);

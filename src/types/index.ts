@@ -10,6 +10,12 @@ export interface Lead extends DocumentData {
     anotacoes?: string;
     status?: string; // Tarefa em Atraso, Tarefa do Dia, etc.
     tarefasPendentes?: TarefaPendente[]; // espelho das tarefas pendentes (subcoleção 'tarefas')
+    /** de qual carteira é: 'imobiliaria' (a casa entrega) | 'rede' (o corretor traz). Sem campo → pela origem. */
+    carteira?: string;
+    /** a opção de origem escolhida ao cadastrar (Propaganda, Ligação, Networking, Plantão…) */
+    origemTipo?: string;
+    /** guardado na gaveta de Interesse futuro do corretor (até 50) */
+    guardado?: boolean;
     [key: string]: any;
 }
 

@@ -109,6 +109,7 @@ export async function aceitarAdsLead({
           ? `Propaganda · ${dados.campanhaNome}${dados.anuncioNome ? ` (${dados.anuncioNome})` : ''}`
           : 'Propaganda · Meta',
         origemTipo: 'Propaganda',
+        carteira: 'imobiliaria', // lead que a casa comprou — cobrado pelo circuito
         origemPropaganda: dados.campanhaNome
           ? `${dados.campanhaNome}${dados.anuncioNome ? ` (${dados.anuncioNome})` : ''}`
           : 'Meta',

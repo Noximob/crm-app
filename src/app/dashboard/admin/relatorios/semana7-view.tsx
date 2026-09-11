@@ -21,6 +21,7 @@ import React, { useMemo, useState } from 'react';
 import { ETAPAS_CIRCUITO, ETAPA_FECHADO, ETAPA_DESCARTADO, mapEtapaCircuito, etapaIndex } from '@/lib/circuito';
 import { metricasJanela, mediana, type MetricasJanela } from './corretor';
 import { msOf, fmtSeg, type RelLead, type RelCorretor, type AtividadeLead, type RelVenda, type LeadDistRow } from './logic';
+import { contaNaDisciplina } from '@/lib/funilVendas';
 
 const DIA = 24 * 60 * 60 * 1000;
 const HORA = 3_600_000;
@@ -113,7 +114,8 @@ function computeSemana7(
         if (pMs >= cMs && pMs > 0) t1s.push((pMs - cMs) / HORA);
         else if (et !== ETAPA_DESCARTADO && (agora - cMs) / HORA >= 24) novosSemContato++;
       }
-      const atT = atividade?.get(l.id);
+      // rede e gaveta ficam fora da régua de atraso (agendar lá é opcional)
+      const atT = contaNaDisciplina(l) ? atividade?.get(l.id) : undefined;
       if (atT) for (const t of atT.tarefas) {
         if (t.dueMs <= 0) continue;
         const concluida = /conclu/i.test(t.status);

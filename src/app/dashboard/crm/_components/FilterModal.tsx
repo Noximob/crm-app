@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
-import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_PRODUTO, TIPOS_CONTATO, comInteresseFuturo } from '@/lib/circuito';
+import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_PRODUTO, TIPOS_CONTATO } from '@/lib/circuito';
+import { ORIGENS_TODAS, rotuloOrigem, FASES_ROTULOS } from '@/lib/funilVendas';
 
 // Valor interno (bate com lead.taskStatus) + rótulo amigável exibido no chip
 const TASK_STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -46,8 +46,9 @@ export function getAcaoBuckets(pendentes: { type?: string; description?: string 
     return buckets.size > 0 ? Array.from(buckets) : ['Sem próxima ação'];
 }
 
-// Origens conhecidas (mesmas opções do NewLeadModal). Leads legados sem origemTipo caem em "Outros".
-export const ORIGEM_FILTER_OPTIONS = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
+// Origens conhecidas: as duas carteiras juntas (src/lib/funilVendas.ts).
+// Leads legados sem origemTipo caem em "Outros".
+export const ORIGEM_FILTER_OPTIONS = ORIGENS_TODAS;
 
 /**
  * Deriva a "origem" de um lead para fins de filtro:
@@ -96,8 +97,11 @@ interface FilterModalProps {
     initialCampanha?: string | null;
     /** Campanhas distintas encontradas nos leads carregados (com contagem) */
     campanhas?: { nome: string; count: number }[];
-    /** @deprecated Etapas vêm do contexto (funil configurável) */
-    pipelineStages?: string[];
+    /**
+     * As colunas do quadro que chamou (as 6 fases; na rede, mais a gaveta).
+     * Sem isso, usa as 6 fases.
+     */
+    colunas?: readonly string[];
 }
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -122,11 +126,9 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
     </button>
 );
 
-export default function FilterModal({ isOpen, onClose, onApply, initialFilters, initialOrigem = null, initialCampanha = null, campanhas = [] }: FilterModalProps) {
-    const { stages: stagesFromContext } = usePipelineStages();
-    // "Interesse futuro" é coluna derivada (agenda > 15 dias) — precisa aparecer
-    // aqui, senão dá pra ver a coluna no quadro mas não filtrar por ela.
-    const pipelineStages = useMemo(() => comInteresseFuturo(stagesFromContext), [stagesFromContext]);
+export default function FilterModal({ isOpen, onClose, onApply, initialFilters, initialOrigem = null, initialCampanha = null, campanhas = [], colunas }: FilterModalProps) {
+    // as colunas do quadro que chamou — fase é o que se filtra, não a casa do circuito
+    const pipelineStages = useMemo(() => [...(colunas || FASES_ROTULOS)], [colunas]);
     const [selectedFilters, setSelectedFilters] = useState<Filters>(initialFilters);
     const [origemSel, setOrigemSel] = useState<string | null>(initialOrigem);
     const [campanhaSel, setCampanhaSel] = useState<string | null>(initialCampanha);
@@ -222,7 +224,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                             {ORIGEM_FILTER_OPTIONS.map(option => (
                                 <FilterTag
                                     key={option}
-                                    label={option}
+                                    label={rotuloOrigem(option)}
                                     isSelected={origemSel === option}
                                     onClick={() => handleOrigemClick(option)}
                                 />

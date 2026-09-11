@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit, arrayUnion, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocs, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit, arrayUnion, Timestamp } from 'firebase/firestore';
 import { TarefaPendente, fetchPendentesDaSubcolecao, getTaskStatusInfo, toJsDate, type TaskStatus } from '@/lib/leadTasks';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
-import CrmHeader from '../_components/CrmHeader';
+import CrmHeader, { raizDaCarteira } from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
 import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito, type EstadoFluxo } from '@/components/atendimento/AtendimentoOverlay';
@@ -18,6 +18,10 @@ import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
 import { CADENCIAS_PADRAO, carregarCadencias, etapaAposAcao, ETAPA_DESCARTADO, ETAPA_MEET_FEITO, ETAPA_VISITA_FEITA, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
+import {
+    carteiraDoLead, leadGuardado, contaNaDisciplina, rotuloDaFase,
+    CAP_INTERESSE_FUTURO, CARTEIRA_REDE,
+} from '@/lib/funilVendas';
 
 // --- Ícones ---
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
@@ -111,6 +115,9 @@ export default function LeadDetailPage() {
     const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
     const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
     const [saveNotas, setSaveNotas] = useState<'idle' | 'salvando' | 'salvo'>('idle');
+    // A GAVETA: quantos o corretor já guardou (o teto é por corretor)
+    const [guardados, setGuardados] = useState<number | null>(null);
+    const [mexendoGaveta, setMexendoGaveta] = useState(false);
 
     // Dirty-guards: não deixar o snapshot do lead atropelar edição em andamento
     const qualDirty = useRef(false);
@@ -191,6 +198,14 @@ export default function LeadDetailPage() {
         return () => unsubscribe();
     }, [currentUser, leadId, isEspelhoDemo]);
 
+    // --- A gaveta: quantos já estão guardados (pra mostrar o teto) ---
+    useEffect(() => {
+        if (!currentUser || isEspelhoDemo) return;
+        getDocs(query(collection(db, 'leads'), where('userId', '==', currentUser.uid), where('guardado', '==', true)))
+            .then(snap => setGuardados(snap.size))
+            .catch(() => setGuardados(null));
+    }, [currentUser, isEspelhoDemo, lead?.guardado]);
+
     // --- Interações (histórico) ---
     useEffect(() => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
@@ -252,13 +267,16 @@ export default function LeadDetailPage() {
     // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
     // Reativo: virou pendente (ex.: concluiu a última tarefa) → o pop-up abre sozinho.
     // Só não insiste na mesma visita depois de um ✕ (pendência fica avisando).
+    // O circuito cobra a carteira da CASA. Na rede e na gaveta, agendar é
+    // opcional: o pop-up não abre sozinho — o corretor chama quando quer.
+    const cobrado = lead ? contaNaDisciplina(lead) : true;
     useEffect(() => {
-        if (loading || readOnly || atendimentoAberto || fechouNoX) return;
+        if (loading || readOnly || atendimentoAberto || fechouNoX || !cobrado) return;
         if (circuitoInfo?.pendente) {
             const id = setTimeout(() => setAtendimentoAberto(true), 450);
             return () => clearTimeout(id);
         }
-    }, [loading, readOnly, atendimentoAberto, fechouNoX, circuitoInfo]);
+    }, [loading, readOnly, atendimentoAberto, fechouNoX, circuitoInfo, cobrado]);
 
     const handleFecharX = () => {
         setAtendimentoAberto(false);
@@ -277,7 +295,8 @@ export default function LeadDetailPage() {
             // Descartado sai da visão do corretor → vai pro bolsão da área do admin
             foiDescartado.current = false;
             showToast('O lead saiu do seu CRM e foi pro bolsão do administrador.', 'info');
-            setTimeout(() => router.push('/dashboard/crm'), 900);
+            const raiz = lead ? raizDaCarteira(carteiraDoLead(lead)) : '/dashboard/crm';
+            setTimeout(() => router.push(raiz), 900);
         }
     };
 
@@ -352,6 +371,47 @@ export default function LeadDetailPage() {
                     showToast('Erro ao salvar anotações.', 'error');
                 });
         }, 800);
+    };
+
+    /**
+     * A GAVETA de Interesse futuro: guardar tira o lead do dia a dia (some do
+     * CRM da casa, vai pra coluna própria na rede, sem cobrança); tirar devolve
+     * pro lugar de onde veio. Teto de CAP_INTERESSE_FUTURO (50) por corretor, checado aqui.
+     */
+    const alternarGaveta = async () => {
+        if (!lead || !currentUser) return;
+        if (isEspelhoDemo || readOnly) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+        const guardar = !leadGuardado(lead);
+        if (guardar && (guardados ?? 0) >= CAP_INTERESSE_FUTURO) {
+            showToast(`Sua gaveta está cheia (${CAP_INTERESSE_FUTURO}). Tire alguém dela antes de guardar outro.`, 'error');
+            return;
+        }
+        setMexendoGaveta(true);
+        try {
+            const daRede = carteiraDoLead(lead) === CARTEIRA_REDE;
+            const batch = writeBatch(db);
+            batch.update(doc(db, 'leads', lead.id), guardar
+                ? { guardado: true, guardadoEm: serverTimestamp(), guardadoPor: currentUser.uid }
+                : { guardado: false, guardadoEm: null });
+            batch.set(doc(collection(db, 'leads', lead.id, 'interactions')), {
+                type: 'Etapa',
+                notes: guardar
+                    ? '💤 Guardado em Interesse futuro — fora do dia a dia até você tirar'
+                    : `↩ Saiu do Interesse futuro — de volta ${daRede ? 'à sua rede' : 'ao CRM da casa'}`,
+                timestamp: serverTimestamp(),
+                por: userData?.nome || '',
+            });
+            await batch.commit();
+            setGuardados(g => Math.max(0, (g ?? 0) + (guardar ? 1 : -1)));
+            showToast(guardar
+                ? `💤 ${lead.nome.split(' ')[0]} guardado. Ele fica na coluna Interesse futuro da sua rede.`
+                : `↩ ${lead.nome.split(' ')[0]} voltou ${daRede ? 'pra sua rede' : 'pro CRM da casa'}.`, 'success');
+        } catch (e) {
+            console.error('gaveta:', e);
+            showToast('Não foi possível salvar — tente de novo.', 'error');
+        } finally {
+            setMexendoGaveta(false);
+        }
     };
 
     /** "Importante": lead que o gerente acompanha e leva pra reunião. */
@@ -579,7 +639,7 @@ export default function LeadDetailPage() {
 
     return (
         <div className="min-h-full p-4 sm:p-6 lg:p-8">
-            <CrmHeader />
+            <CrmHeader carteira={carteiraDoLead(lead)} />
             {readOnly && (
               <div className="mb-4 px-4 py-3 rounded-xl bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] text-sm font-medium flex items-center gap-2">
                 <span>👁️</span> Visualizando CRM do corretor — somente leitura.
@@ -598,11 +658,23 @@ export default function LeadDetailPage() {
                                 <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`} title={taskStatus}></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                {/* Etapa é só LEITURA — o circuito conduz pelo momento do cliente */}
+                                {/* Etapa é só LEITURA — o circuito conduz pelo momento do cliente.
+                                    O chip mostra a FASE do funil; a casa do circuito fica no title. */}
                                 <span
                                   className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]"
-                                  title="O circuito move sozinho pelas respostas do cliente"
-                                >{etapaAtual}</span>
+                                  title={`${etapaAtual} — o circuito move sozinho pelas respostas do cliente`}
+                                >{rotuloDaFase(etapaAtual)}</span>
+                                {/* de quem é o lead — a casa cobra; a rede é do corretor */}
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${carteiraDoLead(lead) === CARTEIRA_REDE
+                                    ? 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#FFE9A6]' : 'bg-white/[0.04] border-white/15 text-text-secondary'}`}
+                                  title={carteiraDoLead(lead) === CARTEIRA_REDE ? 'Sua rede: networking, indicação, rua, plantão — agendar é opcional' : 'Lead da casa — o circuito cobra o próximo passo'}
+                                >{carteiraDoLead(lead) === CARTEIRA_REDE ? '🤝 Minha rede' : '🏢 Da casa'}</span>
+                                {leadGuardado(lead) && (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]" title="Guardado em Interesse futuro — sem cobrança até você tirar">
+                                        💤 Guardado
+                                    </span>
+                                )}
                                 {rodizioPrimeiroContato && (
                                     <span
                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]"
@@ -622,6 +694,32 @@ export default function LeadDetailPage() {
                                         title="Descartar este cliente (vai pedir o motivo)"
                                     >
                                         🗑 Descartar
+                                    </button>
+                                )}
+                                {/* Na rede e na gaveta o pop-up não abre sozinho — este botão é a porta */}
+                                {!readOnly && circuitoInfo && !cobrado && etapaAtual !== ETAPA_DESCARTADO && normalizeEtapa(lead.etapa) !== 'Fechamento' && (
+                                    <button
+                                        onClick={() => { setEstadoForcado(null); setFechouNoX(false); setAtendimentoAberto(true); }}
+                                        className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border border-[#E8C547]/45 bg-[#E8C547]/10 text-[#FFE9A6] hover:bg-[#E8C547]/20 transition-colors"
+                                        title="Abre o atendimento (o pop-up do circuito) — aqui ele não abre sozinho"
+                                    >
+                                        ▶ Atender
+                                    </button>
+                                )}
+                                {!readOnly && etapaAtual !== ETAPA_DESCARTADO && normalizeEtapa(lead.etapa) !== 'Fechamento' && (
+                                    <button
+                                        onClick={alternarGaveta}
+                                        disabled={mexendoGaveta}
+                                        className={`px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border transition-colors disabled:opacity-50 ${leadGuardado(lead)
+                                            ? 'border-[#7DD3FC]/45 bg-[#7DD3FC]/10 text-[#7DD3FC] hover:bg-[#7DD3FC]/20'
+                                            : 'border-white/15 bg-white/[0.04] text-text-secondary hover:text-[#7DD3FC] hover:border-[#7DD3FC]/45'}`}
+                                        title={leadGuardado(lead)
+                                            ? 'Tirar da gaveta: volta pro CRM e pra cobrança'
+                                            : `Guardar em Interesse futuro: sai do dia a dia, fica na sua rede sem cobrança (até ${CAP_INTERESSE_FUTURO})`}
+                                    >
+                                        {leadGuardado(lead)
+                                            ? '↩ Tirar do Interesse futuro'
+                                            : `💤 Guardar${guardados !== null ? ` (${guardados}/${CAP_INTERESSE_FUTURO})` : ''}`}
                                     </button>
                                 )}
                                 <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
@@ -647,7 +745,7 @@ export default function LeadDetailPage() {
                     </div>
 
                     {/* O circuito conduz por pop-up — aqui só faixas finas quando precisa agir */}
-                    {!readOnly && fechouNoX && !!circuitoInfo?.pendente && (
+                    {!readOnly && cobrado && fechouNoX && !!circuitoInfo?.pendente && (
                         <button
                             onClick={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
                             className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left hover:bg-amber-500/15 transition-colors"
@@ -683,7 +781,11 @@ export default function LeadDetailPage() {
                             )}
                         </div>
                         {tarefasOrdenadas.length === 0 ? (
-                            <p className="text-sm text-text-secondary py-2">Nenhuma tarefa pendente — o circuito acima cria a próxima ação.</p>
+                            <p className="text-sm text-text-secondary py-2">
+                                {cobrado
+                                    ? 'Nenhuma tarefa pendente — o circuito acima cria a próxima ação.'
+                                    : 'Nenhuma tarefa pendente. Aqui agendar é opcional — marque quando fizer sentido, ou use ▶ Atender.'}
+                            </p>
                         ) : (
                             <ul className="space-y-2">
                                 {tarefasOrdenadas.map(t => {

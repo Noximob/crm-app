@@ -5,7 +5,8 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
-import { ETAPAS_DO_ADMIN, colunaDoLead, comInteresseFuturo } from '@/lib/circuito';
+import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { leadGuardado } from '@/lib/funilVendas';
 
 export interface LeadFunil {
   id: string;
@@ -39,7 +40,7 @@ export interface FunilVendasData {
 }
 
 export function useFunilVendasData(imobiliariaId: string | undefined, corretoresVisiveisIds?: string[]): FunilVendasData {
-  const { stages, normalizeEtapa } = usePipelineStages();
+  const { fasesRotulos, faseDe, normalizeEtapa } = usePipelineStages();
   const [leads, setLeads] = useState<LeadFunil[]>([]);
   const [corretores, setCorretores] = useState<CorretorFunil[]>([]);
   const [loading, setLoading] = useState(!!imobiliariaId);
@@ -105,14 +106,14 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
   return useMemo(() => {
     const setVisiveis = corretoresVisiveisIds?.length ? new Set(corretoresVisiveisIds) : null;
     // Bolsão/Descartado (área do admin) ficam fora do funil da TV
-    const leadsAtivos = leads.filter((l) => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(l.etapa)));
+    const leadsAtivos = leads.filter((l) => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(l.etapa)) && !leadGuardado(l as { guardado?: unknown }));
     const leadsFiltrados = setVisiveis ? leadsAtivos.filter((l) => l.userId && setVisiveis.has(l.userId)) : leadsAtivos;
     const corretoresFiltrados = setVisiveis ? corretores.filter((c) => setVisiveis.has(c.id)) : corretores;
 
-    // O funil da TV mostra a mesma coluna do quadro — com "Interesse futuro"
-    // separado, senão "Em Contato" incha com quem só volta daqui a meses.
-    const colunas = comInteresseFuturo(stages);
-    const colunaDe = (l: LeadFunil) => colunaDoLead(normalizeEtapa(l.etapa), (l as { tarefasPendentes?: { dueDate?: unknown }[] }).tarefasPendentes);
+    // O funil da TV são as 6 FASES da casa. Lead guardado na gaveta do
+    // corretor fica fora — não está sendo trabalhado.
+    const colunas = [...fasesRotulos];
+    const colunaDe = (l: LeadFunil) => faseDe(l.etapa);
 
     const funilCorporativo: FunilPorEtapa = {};
     colunas.forEach((e) => { funilCorporativo[e] = 0; });
@@ -160,5 +161,5 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
       loading,
       error,
     };
-  }, [leads, corretores, loading, error, stages, normalizeEtapa, corretoresVisiveisIds?.join(',')]);
+  }, [leads, corretores, loading, error, fasesRotulos, faseDe, normalizeEtapa, corretoresVisiveisIds?.join(',')]);
 }

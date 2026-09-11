@@ -34,7 +34,7 @@ export function FunilVendasIndividualSlide({
   funilPorCorretor,
   compact = false,
 }: FunilVendasIndividualSlideProps) {
-  const { stages } = usePipelineStages();
+  const { fasesRotulos } = usePipelineStages();
   const top9 = useMemo(() => funilPorCorretor.slice(0, TOP_N), [funilPorCorretor]);
   const maxTotal = useMemo(() => Math.max(...top9.map((c) => c.total), 1), [top9]);
 
@@ -54,7 +54,7 @@ export function FunilVendasIndividualSlide({
         <div className="h-full grid grid-cols-3 grid-rows-3 gap-2">
           {top9.map((corretor, idx) => {
             const porEtapa = corretor.porEtapa;
-            const etapasVisiveis = stages.slice(0, 6);
+            const etapasVisiveis = [...fasesRotulos];
             const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
             const nivel = getNivel(corretor.total);
             const pctDoMax = Math.round((corretor.total / maxTotal) * 100);

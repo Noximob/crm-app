@@ -78,17 +78,18 @@ export function etapaAposAcao(atualNormalizada: string, alvo: string): string {
 export const ETAPAS_TERMINAIS = [ETAPA_FECHADO, ETAPA_DESCARTADO] as const;
 
 // ---------------------------------------------------------------------------
-// Interesse futuro — COLUNA DERIVADA (não é etapa gravada no lead)
+// Interesse futuro
 // ---------------------------------------------------------------------------
 /**
- * Cliente que já teve contato mas só volta ao radar lá na frente: a próxima
- * tarefa dele está marcada pra daqui a mais de INTERESSE_FUTURO_DIAS.
+ * HOJE a gaveta de Interesse futuro é EXPLÍCITA: o corretor guarda o lead
+ * (`lead.guardado = true`, até 50 — src/lib/funilVendas.ts) e ele passa a
+ * morar na coluna "Interesse futuro" do CRM da rede, fora da cobrança. Nas
+ * telas, é isso que a coluna mostra.
  *
- * É deliberadamente DERIVADO da tarefa, e não gravado em `lead.etapa`:
- *  - a etapa é catraca (só anda pra frente) — gravar prenderia o cliente aqui
- *    mesmo depois de antecipar a tarefa;
- *  - assim que a tarefa é antecipada (ou vence), ele volta sozinho pra Em Contato;
- *  - o histórico do funil continua íntegro (nada de etapa fantasma no banco).
+ * O que fica abaixo é a versão ANTIGA, derivada da agenda ("tarefa pra
+ * daqui a mais de 15 dias"). Sobrevive porque a auditoria de atendimento
+ * ainda usa esse rótulo pra classificar leads parados — não é mais coluna
+ * de quadro nem filtro de lista.
  */
 export const ETAPA_INTERESSE_FUTURO = 'Interesse futuro';
 export const INTERESSE_FUTURO_DIAS = 15;

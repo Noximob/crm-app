@@ -8,6 +8,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Lead } from '@/types';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, getTaskStatusInfo, toJsDate, TarefaPendente, TaskStatus } from '@/lib/leadTasks';
+import { contaNaDisciplina } from '@/lib/funilVendas';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import { formatarTelefone, linkWhatsApp, linkTelefone } from '@/lib/telefone';
 
@@ -112,7 +113,9 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                     tarefasMap = await ensureTarefasPendentes(allLeads);
                 }
 
-                const settledLeads: LeadWithTask[] = allLeads.map((lead) => {
+                // A rede do corretor e a gaveta não entram na agenda de cobrança:
+                // agendar ali é opcional — o que ele marcou aparece na Agenda Completa.
+                const settledLeads: LeadWithTask[] = allLeads.filter((lead) => contaNaDisciplina(lead)).map((lead) => {
                     const pendentes = tarefasMap.get(lead.id) || [];
                     const { task, due } = proximaTarefa(pendentes);
                     return {

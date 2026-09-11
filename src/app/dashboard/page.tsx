@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { ensureTarefasPendentes, getTaskStatusInfo, toJsDate, TarefaPendente } from '@/lib/leadTasks';
 import { ETAPA_FECHADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { leadGuardado, contaNaDisciplina } from '@/lib/funilVendas';
 import { autoRecalcularMeetsVisitas, garantirPeriodoSemanaAtual } from '@/lib/meetsVisitas';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
@@ -465,7 +466,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 
 export default function DashboardPage() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
-  const { stages, normalizeEtapa } = usePipelineStages();
+  const { fases, fasesRotulos, faseDe, normalizeEtapa } = usePipelineStages();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
@@ -541,19 +542,22 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isEspelhoDemo) {
       const demoLeads = getDemoLeads();
+      // Funil pessoal por FASE (as 6 do funil da casa) — a gaveta fica fora
       const porEtapa: Record<string, number> = {};
-      stages.forEach(e => { porEtapa[e] = 0; });
+      fasesRotulos.forEach(e => { porEtapa[e] = 0; });
       demoLeads.forEach(lead => {
-        const etapa = normalizeEtapa(lead.etapa);
+        if (leadGuardado(lead as any)) return;
+        const fase = faseDe(lead.etapa);
         // Bolsão/Descartado (área do admin) ficam fora do funil pessoal
-        if (porEtapa[etapa] === undefined) return;
-        porEtapa[etapa] += 1;
+        if (porEtapa[fase] === undefined) return;
+        porEtapa[fase] += 1;
       });
       setFunilPessoal(porEtapa);
-      // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede tarefa
+      // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede
+      // tarefa; a rede e a gaveta não são cobradas (agendar ali é opcional)
       const demoAtivos = demoLeads.filter(l => {
         const e = normalizeEtapa(l.etapa);
-        return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO;
+        return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO && contaNaDisciplina(l as any);
       });
       setTarefaAtrasadaCount(demoAtivos.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
       setTarefaDiaCount(demoAtivos.filter(l => l.taskStatus === 'Tarefa do Dia').length);
@@ -585,20 +589,22 @@ export default function DashboardPage() {
           const taskStatus = getTaskStatusInfo(tasks);
           return { ...lead, taskStatus, tasks };
         });
-        // Funil pessoal: contagem por etapa
+        // Funil pessoal: contagem por FASE (as 6 do funil da casa) — a gaveta fica fora
         const porEtapa: Record<string, number> = {};
-        stages.forEach(e => { porEtapa[e] = 0; });
+        fasesRotulos.forEach(e => { porEtapa[e] = 0; });
         allLeads.forEach((lead: any) => {
-          const etapa = normalizeEtapa(lead.etapa);
+          if (leadGuardado(lead)) return;
+          const fase = faseDe(lead.etapa);
           // Bolsão/Descartado (área do admin) ficam fora do funil pessoal
-          if (porEtapa[etapa] === undefined) return;
-          porEtapa[etapa] += 1;
+          if (porEtapa[fase] === undefined) return;
+          porEtapa[fase] += 1;
         });
         setFunilPessoal(porEtapa);
-        // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede tarefa
+        // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede
+        // tarefa; a rede e a gaveta não são cobradas (agendar ali é opcional)
         const settledAtivos = settledLeads.filter((l: any) => {
           const e = normalizeEtapa(l.etapa);
-          return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO;
+          return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO && contaNaDisciplina(l);
         });
         setTarefaAtrasadaCount(settledAtivos.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
         setTarefaDiaCount(settledAtivos.filter(l => l.taskStatus === 'Tarefa do Dia').length);
@@ -626,7 +632,7 @@ export default function DashboardPage() {
       }
     };
     fetchAgenda();
-  }, [currentUser, stages, normalizeEtapa, isEspelhoDemo]);
+  }, [currentUser, fasesRotulos, faseDe, normalizeEtapa, isEspelhoDemo]);
 
   // Buscar agenda imobiliária
   useEffect(() => {
@@ -1229,15 +1235,15 @@ export default function DashboardPage() {
               <LoadingState label="Carregando..." className="py-4" />
             ) : (() => {
               const porEtapa = funilPessoal;
-              const etapasVisiveis = stages.slice(0, 6);
+              // as 6 fases do funil da casa — Negociação e Fechamento incluídos
+              const etapasVisiveis = fases.map((f) => f.rotulo);
               const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
-              const coresFunil = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
               return (
                 <div className="min-w-0 flex-1 min-h-0 flex flex-col justify-center gap-[5px]">
                   {etapasVisiveis.map((etapa, ei) => {
                     const qtd = porEtapa[etapa] ?? 0;
                     const w = qtd > 0 ? Math.max((qtd / maxLocal) * 100, 18) : 5;
-                    const cor = coresFunil[ei % coresFunil.length];
+                    const cor = fases[ei].cor;
                     return (
                       <Link key={etapa} href="/dashboard/crm" className="group flex items-center gap-2 min-w-0 min-h-[44px] lg:min-h-0" title={`${etapa}: ${qtd} lead${qtd === 1 ? '' : 's'}`}>
                         <span className="w-[7.5rem] shrink-0 text-[10px] text-text-secondary truncate text-right group-hover:text-white transition-colors">{etapa}</span>

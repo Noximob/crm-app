@@ -10,10 +10,20 @@ import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModa
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
-import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN, ETAPA_INTERESSE_FUTURO, colunaDoLead, comInteresseFuturo } from '@/lib/circuito';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN, ETAPA_INTERESSE_FUTURO } from '@/lib/circuito';
 import { statusDoLead, type StatusLead } from '@/lib/statusLead';
+import { carteiraDoLead, leadGuardado, contaNaDisciplina, rotuloDaFase, CARTEIRA_REDE, type Carteira } from '@/lib/funilVendas';
+
+/** O admin escolhe qual carteira do corretor quer ver — as duas, por padrão. */
+type FiltroCarteira = 'todas' | Carteira;
+const ROTULO_FECHADO_FASE = rotuloDaFase(ETAPA_FECHADO);
 
 interface Lead {
+  /** 'imobiliaria' | 'rede' — sem campo, decide pela origem */
+  carteira?: string;
+  origemTipo?: string;
+  /** guardado na gaveta de Interesse futuro */
+  guardado?: boolean;
   id: string;
   nome: string;
   telefone: string;
@@ -83,7 +93,7 @@ const StatusIndicator = ({ status }: { status: StatusLead }) => {
 
 // Classes de cor do chip de etapa: dourado no circuito, verde para Fechado, cinza para Descartado
 const etapaChipClasses = (etapa: string) => {
-  if (etapa === ETAPA_FECHADO) return 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]';
+  if (etapa === ROTULO_FECHADO_FASE) return 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]';
   if (etapa === ETAPA_DESCARTADO) return 'bg-white/[0.05] border-white/15 text-text-secondary';
   if (etapa === ETAPA_INTERESSE_FUTURO) return 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]';
   return 'bg-white/10 border-white/10 text-[#E8C547]';
@@ -130,7 +140,11 @@ const msDe = (v: unknown): number => {
 
 export default function VisualizarCrmCorretorPage() {
   const { userData, isEspelhoDemo } = useAuth();
-  const { stages, normalizeEtapa } = usePipelineStages();
+  const { fasesRotulos, faseDe, normalizeEtapa } = usePipelineStages();
+  const [filtroCarteira, setFiltroCarteira] = useState<FiltroCarteira>('todas');
+  // colunas: as 6 fases + a gaveta (o corretor pode ter leads guardados)
+  const colunas = useMemo(() => [...fasesRotulos, ETAPA_INTERESSE_FUTURO], [fasesRotulos]);
+  const colunaDe = (l: { etapa?: string; guardado?: unknown }) => (leadGuardado(l) ? ETAPA_INTERESSE_FUTURO : faseDe(l.etapa));
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [selectedCorretorId, setSelectedCorretorId] = useState<string>('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -198,8 +212,9 @@ export default function VisualizarCrmCorretorPage() {
           nome: l.nome,
           telefone: l.telefone,
           etapa: l.etapa,
-          taskStatus: statusDoLead(l.etapa, tasks),
+          taskStatus: statusDoLead(l.etapa, tasks, contaNaDisciplina(l as any)),
           qualificacao: l.qualificacao || {},
+          carteira: (l as any).carteira, origemTipo: (l as any).origemTipo, guardado: (l as any).guardado,
         };
       });
       setLeads(newLeads);
@@ -225,7 +240,7 @@ export default function VisualizarCrmCorretorPage() {
       const tarefasMap = await ensureTarefasPendentes(rawLeads);
       const newLeads = rawLeads.map(leadData => {
         const pend = tarefasMap.get(leadData.id) || [];
-        leadData.taskStatus = statusDoLead(leadData.etapa, pend);
+        leadData.taskStatus = statusDoLead(leadData.etapa, pend, contaNaDisciplina(leadData));
         leadData.tarefas = pend; // guardadas pro filtro "agendado no período"
         return leadData;
       });
@@ -250,11 +265,11 @@ export default function VisualizarCrmCorretorPage() {
   useEffect(() => {
     // inclui a coluna derivada "Interesse futuro" — sem isso o filtro se
     // autolimpava no mesmo instante em que era selecionado
-    if (activeFilter && !comInteresseFuturo(stages).includes(activeFilter)) {
+    if (activeFilter && !colunas.includes(activeFilter)) {
       setActiveFilter(null);
       setCurrentPage(1);
     }
-  }, [stages.join(','), activeFilter]);
+  }, [colunas.join(','), activeFilter]);
 
   // Timeline dos leads — só é lida quando o admin pede o modo "interagido"
   // (é uma subcoleção por lead; não vale puxar sem necessidade).
@@ -309,9 +324,15 @@ export default function VisualizarCrmCorretorPage() {
         (buscaDigitos.length >= 3 && (l.telefone || '').replace(/\D/g, '').includes(buscaDigitos))
       );
     }
-    // Filtra pela COLUNA do quadro (com "Interesse futuro" derivado da agenda),
+    // Carteira: a casa entrega × o corretor traz (a gaveta mora na rede)
+    if (filtroCarteira !== 'todas') {
+      list = list.filter(l => filtroCarteira === CARTEIRA_REDE
+        ? (carteiraDoLead(l) === CARTEIRA_REDE || leadGuardado(l))
+        : (carteiraDoLead(l) !== CARTEIRA_REDE && !leadGuardado(l)));
+    }
+    // Filtra pela COLUNA do quadro (fase do funil, ou a gaveta),
     // pro admin ver exatamente o mesmo que o corretor vê no CRM dele.
-    if (activeFilter) list = list.filter(l => colunaDoLead(normalizeEtapa(l.etapa), l.tarefas) === activeFilter);
+    if (activeFilter) list = list.filter(l => colunaDe(l) === activeFilter);
     if (activeTaskFilter) list = list.filter(l => l.taskStatus === activeTaskFilter);
     // Período: interações já feitas OU tarefas marcadas dentro do intervalo
     if (periodoModo !== 'off' && periodoIni && periodoFim) {
@@ -329,7 +350,7 @@ export default function VisualizarCrmCorretorPage() {
         return Object.entries(advancedFilters).every(([key, selectedOptions]: [string, string[]]) => {
           if (selectedOptions.length === 0) return true;
           if (key === 'taskStatus') return selectedOptions.includes(lead.taskStatus);
-          const leadValue = key === 'etapa' ? colunaDoLead(normalizeEtapa(lead.etapa), lead.tarefas) : lead.qualificacao?.[key];
+          const leadValue = key === 'etapa' ? colunaDe(lead) : lead.qualificacao?.[key];
           if (leadValue === undefined) return false;
           if (Array.isArray(leadValue)) return leadValue.some(v => selectedOptions.includes(v));
           return selectedOptions.includes(leadValue);
@@ -337,7 +358,7 @@ export default function VisualizarCrmCorretorPage() {
       });
     }
     return list;
-  }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, normalizeEtapa, periodoModo, periodoIni, periodoFim, interacoesPorLead]);
+  }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, faseDe, periodoModo, periodoIni, periodoFim, interacoesPorLead, filtroCarteira]);
 
   const totalFiltered = filteredLeads.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
@@ -434,7 +455,17 @@ export default function VisualizarCrmCorretorPage() {
                       <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                         <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {comInteresseFuturo(stages).map(stage => (
+                          {/* a carteira vem antes da etapa: primeiro "de quem é", depois "onde está" */}
+                          {([['todas', 'Tudo'], ['imobiliaria', '🏢 Da casa'], [CARTEIRA_REDE, '🤝 Rede dele']] as const).map(([v, rot]) => (
+                            <button key={v} type="button" onClick={() => { setFiltroCarteira(v as FiltroCarteira); setCurrentPage(1); }}
+                              className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${filtroCarteira === v
+                                ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]'
+                                : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08]'}`}>
+                              {rot}
+                            </button>
+                          ))}
+                          <span className="w-px h-5 bg-white/10 mx-1 self-center" />
+                          {colunas.map(stage => (
                             <FilterChip
                               key={stage}
                               selected={activeFilter === stage}
@@ -610,7 +641,7 @@ export default function VisualizarCrmCorretorPage() {
                             </a>
                           </td>
                           <td className="px-3 py-1.5 text-xs w-1/5">
-                            <span className={`inline-block px-2 py-0.5 rounded border font-semibold text-[11px] truncate max-w-[120px] ${etapaChipClasses(colunaDoLead(normalizeEtapa(lead.etapa), lead.tarefas))}`}>{colunaDoLead(normalizeEtapa(lead.etapa), lead.tarefas)}</span>
+                            <span className={`inline-block px-2 py-0.5 rounded border font-semibold text-[11px] truncate max-w-[150px] ${etapaChipClasses(colunaDe(lead))}`} title={normalizeEtapa(lead.etapa)}>{colunaDe(lead)}</span>
                           </td>
                           <td className="px-3 py-1.5 text-xs w-1/5">
                             <span className="text-white"><StatusIndicator status={lead.taskStatus} /></span>
@@ -637,12 +668,12 @@ export default function VisualizarCrmCorretorPage() {
             </main>
             {isFilterModalOpen && (
               <FilterModal
-                key={`filter-${stages.join('-')}`}
+                key={`filter-${colunas.join('-')}`}
                 isOpen={isFilterModalOpen}
                 onClose={() => setFilterModalOpen(false)}
                 onApply={handleApplyFilters}
                 initialFilters={advancedFilters}
-                pipelineStages={stages}
+                colunas={colunas}
               />
             )}
           </>

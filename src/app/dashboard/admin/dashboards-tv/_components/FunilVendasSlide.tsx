@@ -24,7 +24,7 @@ export function FunilVendasSlide({
   compact = false,
   somenteCorporativo = true,
 }: FunilVendasSlideProps) {
-  const { stages } = usePipelineStages();
+  const { fasesRotulos: stages } = usePipelineStages();
   const maxCorporativo = useMemo(
     () => Math.max(...Object.values(funilCorporativo), 1),
     [funilCorporativo]
