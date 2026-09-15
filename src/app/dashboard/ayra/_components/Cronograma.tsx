@@ -97,7 +97,7 @@ const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
         &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC. Estou te retornando porque você tinha se cadastrado numa campanha nossa de imóveis. Tô com uma <B>baita novidade pra te contar em primeira mão</B>: um projeto que estamos aguardando há 2 anos e, pela parceria com a construtora, estamos recebendo antecipado. É um <B>bairro inteiro planejado entre o Beto Carrero e a praia</B>. Pensando em investimento, hoje não tenho nem de perto nada melhor. Separamos um <B>material exclusivo</B>. <B>Me diz o melhor horário pra eu te passar.</B> Abraço!&quot;
       </>
     ),
-    nota: 'Cerca de 92 palavras = 40 segundos. Gravar logo depois da ligação.',
+    nota: 'Cerca de 90 palavras = 39 segundos. Gravar logo depois da ligação.',
   },
   {
     titulo: '3 · Mensagem escrita (não atendeu no dia 2)',
