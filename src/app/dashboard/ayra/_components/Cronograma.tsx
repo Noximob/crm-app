@@ -79,11 +79,13 @@ const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
       <>
         &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC.&quot;
         <Pausa>(ele responde)</Pausa>
-        &quot;Antes que você me pergunte de onde eu tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>. Você lembra?&quot;
+        &quot;Estou te retornando porque você tinha se cadastrado numa campanha nossa a respeito de imóveis, tá lembrado?&quot;
         <Pausa>(ele responde)</Pausa>
-        &quot;Então, <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>.&quot;
+        &quot;Te liguei porque tô com uma <B>baita novidade pra te contar em primeira mão</B>: um projeto que estamos aguardando há 2 anos e, pela parceria que temos com a construtora, estamos recebendo antecipado, para que nossos clientes consigam se planejar da melhor maneira. <B>Tu tem interesse em receber todas as informações que forem saindo em primeira mão?</B>&quot;
         <Pausa>(ele demonstra interesse)</Pausa>
-        &quot;Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. Queria te mostrar em uns 15 minutos, pessoalmente ou por vídeo. <B>Qual o melhor dia e horário pra você?</B>&quot;
+        &quot;É um <B>bairro inteiro planejado entre o Beto Carrero e a praia</B>. Realmente, pensando em investimento, hoje não tenho nem de perto nada melhor. Nossa imobiliária separou um <B>material exclusivo</B> com as principais informações, para que você consiga começar a avaliar desde já. <B>Conseguimos marcar pra te passar esses dados?</B>&quot;
+        <Pausa>(ele responde)</Pausa>
+        &quot;Perfeito, vamos deixar combinado então. <B>Qual o melhor horário pra eu te passar isso?</B>&quot;
       </>
     ),
     nota: 'Havendo interesse: apresentar o material de aquecimento e marcar o meet.',
@@ -92,10 +94,10 @@ const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
     titulo: '2 · Áudio de até 40 segundos (não atendeu no dia 1)',
     texto: (
       <>
-        &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC. Antes que você pergunte de onde tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>, lembra? Te liguei porque <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>. Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. São 15 minutos, pessoalmente ou por vídeo. <B>Me diz um horário bom.</B> Abraço!&quot;
+        &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC. Estou te retornando porque você tinha se cadastrado numa campanha nossa de imóveis. Tô com uma <B>baita novidade pra te contar em primeira mão</B>: um projeto que estamos aguardando há 2 anos e, pela parceria com a construtora, estamos recebendo antecipado. É um <B>bairro inteiro planejado entre o Beto Carrero e a praia</B>. Pensando em investimento, hoje não tenho nem de perto nada melhor. Separamos um <B>material exclusivo</B>. <B>Me diz o melhor horário pra eu te passar.</B> Abraço!&quot;
       </>
     ),
-    nota: 'Cerca de 85 palavras = 37 segundos. Gravar logo depois da ligação.',
+    nota: 'Cerca de 92 palavras = 40 segundos. Gravar logo depois da ligação.',
   },
   {
     titulo: '3 · Mensagem escrita (não atendeu no dia 2)',
@@ -103,11 +105,13 @@ const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
       <>
         Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC.
         <br />
-        Antes que você pergunte de onde tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>, lembra?
+        Estou te retornando porque você tinha se cadastrado numa campanha nossa de imóveis.
         <br />
-        Te liguei porque <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>.
+        Tô com uma <B>baita novidade pra te contar em primeira mão</B>: um projeto que estamos aguardando há 2 anos e, pela parceria com a construtora, estamos recebendo antecipado.
         <br />
-        Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. São 15 minutos, pessoalmente ou por vídeo. <B>Me diz um horário bom.</B> Abraço!
+        É um <B>bairro inteiro planejado entre o Beto Carrero e a praia</B>. Pensando em investimento, hoje não tenho nem de perto nada melhor.
+        <br />
+        Separamos um <B>material exclusivo</B>. <B>Me diz o melhor horário pra eu te passar.</B> Abraço!
       </>
     ),
     nota: 'O mesmo texto do áudio do dia anterior, por escrito.',
