@@ -26,6 +26,8 @@ interface Usuario {
     developer?: boolean;
     /** quem enxerga o Setor de Locação — contratos, CPFs e repasses */
     locacao?: boolean;
+    /** quem enxerga o espaço Ayra (pré-lançamento) — quem tem Desenvolvedor já vê */
+    ayra?: boolean;
   };
 }
 
@@ -99,13 +101,13 @@ export default function DeveloperPage() {
     }
   };
 
-  const handlePermissao = async (user: Usuario, tipo: 'admin' | 'developer' | 'locacao', valor: boolean) => {
+  const handlePermissao = async (user: Usuario, tipo: 'admin' | 'developer' | 'locacao' | 'ayra', valor: boolean) => {
     setMessage(null);
     try {
       const novasPerms = { ...user.permissoes, [tipo]: valor };
       await updateDoc(doc(db, 'usuarios', user.id), { permissoes: novasPerms });
       setCorretores(corretores => corretores.map(c => c.id === user.id ? { ...c, permissoes: novasPerms } : c));
-      setMessage(`Permissão de ${tipo === 'admin' ? 'Admin' : tipo === 'locacao' ? 'Locação' : 'Desenvolvedor'} ${valor ? 'concedida' : 'removida'}!`);
+      setMessage(`Permissão de ${tipo === 'admin' ? 'Admin' : tipo === 'locacao' ? 'Locação' : tipo === 'ayra' ? 'Ayra' : 'Desenvolvedor'} ${valor ? 'concedida' : 'removida'}!`);
     } catch (err) {
       setMessage('Erro ao atualizar permissões');
     }
@@ -279,6 +281,7 @@ export default function DeveloperPage() {
                   <th className="px-4 py-3 text-center">Aprovado</th>
                   <th className="px-4 py-3 text-center">Admin</th>
                   <th className="px-4 py-3 text-center" title="Quem enxerga o Setor de Locação — contratos, CPFs e repasses">Locação</th>
+                  <th className="px-4 py-3 text-center" title="Quem enxerga o espaço Ayra — cronograma, mídias e apresentação do pré-lançamento. Quem tem Desenvolvedor já vê.">Ayra</th>
                   <th className="px-4 py-3 text-center">Desenvolvedor</th>
                   <th className="px-4 py-3 text-center">Excluir</th>
                 </tr>
@@ -295,6 +298,12 @@ export default function DeveloperPage() {
                     <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#E8C547]" checked={!!corretor.permissoes?.locacao} onChange={e => handlePermissao(corretor, 'locacao', e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center">
+                      {/* quem tem Desenvolvedor (ou é a conta da imobiliária) já vê o Ayra — a caixa só informa */}
+                      {corretor.tipoConta === 'imobiliaria' || corretor.permissoes?.developer
+                        ? <input type="checkbox" className="accent-[#C9A54A] opacity-60 cursor-not-allowed" checked disabled title="Já vê o Ayra pelo acesso de Desenvolvedor" />
+                        : <input type="checkbox" className="accent-[#C9A54A]" checked={!!corretor.permissoes?.ayra} onChange={e => handlePermissao(corretor, 'ayra', e.target.checked)} />}
+                    </td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center">
                       {corretor.tipoConta !== 'imobiliaria' && (

@@ -19,6 +19,13 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Ayra (pré-lançamento): material de uso interno servido de public/ayra —
+# fora dos buscadores.
+[[headers]]
+  for = "/ayra/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 [dev]
   command = "npm run dev"
   port = 3000

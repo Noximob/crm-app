@@ -1,0 +1,3 @@
+# Ayra: material aprovado do pré-lançamento — sem conversão de fim de linha,
+# sai no ar byte a byte igual à pasta original
+public/ayra/** -text

@@ -136,7 +136,10 @@ export default function AtendimentoWatcher() {
   }, [pathname]);
   const emPaginaDeLead = !!leadDaPagina;
   // Telas de trabalho focado: o aviso flutuante atrapalha — fica de fora.
-  const semAviso = emPaginaDeLead || (pathname || '').startsWith('/dashboard/ligacao-ativa');
+  // Ayra é apresentação pra cliente: nem o aviso flutuante nem pop-up de
+  // atendimento podem cair por cima dela no meio da reunião.
+  const emAyra = (pathname || '').startsWith('/dashboard/ayra');
+  const semAviso = emPaginaDeLead || emAyra || (pathname || '').startsWith('/dashboard/ligacao-ativa');
 
   // Fila de atendimentos esperando (mais urgente primeiro).
   // TODOS os leads contam — antigos sem tarefa ou com tarefa vencida ficam
@@ -204,11 +207,11 @@ export default function AtendimentoWatcher() {
     const abrivel = novas.find(c => c.porHorario);
     // marca todas como anunciadas (as que não abrem sozinhas ficam no aviso)
     novas.forEach(c => vistos.current.add(c.chave));
-    if (abrivel && !abertoId && !emPaginaDeLead) {
+    if (abrivel && !abertoId && !emPaginaDeLead && !emAyra) {
       const id = setTimeout(() => abrir(abrivel), 800);
       return () => clearTimeout(id);
     }
-  }, [ativo, snapshotChegou, fila, abertoId, emPaginaDeLead, abrir]);
+  }, [ativo, snapshotChegou, fila, abertoId, emPaginaDeLead, emAyra, abrir]);
 
   const leadAberto = useMemo(() => leads.find(l => l.id === abertoId) || null, [leads, abertoId]);
 
