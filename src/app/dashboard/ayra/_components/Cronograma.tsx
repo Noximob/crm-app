@@ -8,6 +8,10 @@
  * arquivo. As duas páginas do PDF viram as duas partes daqui — por isso o
  * "roteiro na página 2" continua fazendo sentido. O PDF original fica pra
  * baixar, pra quem quiser imprimir.
+ *
+ * Roteiros da página 2 reescritos em 15/09/2026. O PDF é gerado da fonte
+ * (Desktop/Apresentação Santer/fonte/agenda.py): mudou roteiro aqui, muda lá
+ * e regera o PDF — senão quem baixa leva o texto velho.
  */
 import React from 'react';
 import { AYRA_AGENDA_PDF, AYRA_AGENDA_PDF_NOME } from '@/lib/ayra';
@@ -63,14 +67,23 @@ const LINHAS: Linha[] = [
   },
 ];
 
+/** Na ligação: a hora de parar e deixar o cliente falar. */
+const Pausa = ({ children }: { children: React.ReactNode }) => (
+  <span className="block my-2 text-[12px] italic text-text-secondary">{children}</span>
+);
+
 const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
   {
     titulo: '1 · Ligação (quando atende)',
     texto: (
       <>
-        &quot;Oi, [nome], tudo bem? É o [corretor], da Nox Imóveis. Tô entrando em contato porque estamos com uma <B>oportunidade de mercado que ainda nem foi lançada aqui na cidade de Penha</B> — e eu gostaria de <B>te deixar à frente do mercado</B>.
-        <br /><br />
-        Queria te mostrar isso em uns 15 minutos, pessoalmente ou por vídeo. <B>Que horas eu posso te ligar</B> pra gente marcar?&quot;
+        &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC.&quot;
+        <Pausa>(ele responde)</Pausa>
+        &quot;Antes que você me pergunte de onde eu tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>. Você lembra?&quot;
+        <Pausa>(ele responde)</Pausa>
+        &quot;Então, <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>.&quot;
+        <Pausa>(ele demonstra interesse)</Pausa>
+        &quot;Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. Queria te mostrar em uns 15 minutos, pessoalmente ou por vídeo. <B>Qual o melhor dia e horário pra você?</B>&quot;
       </>
     ),
     nota: 'Havendo interesse: apresentar o material de aquecimento e marcar o meet.',
@@ -79,23 +92,25 @@ const ROTEIROS: { titulo: string; texto: React.ReactNode; nota: string }[] = [
     titulo: '2 · Áudio de até 40 segundos (não atendeu no dia 1)',
     texto: (
       <>
-        &quot;Oi, [nome], tudo bem? Aqui é o [corretor], da Nox Imóveis. Te liguei agora porque estamos com uma <B>oportunidade de mercado que ainda nem foi lançada aqui na cidade de Penha</B>, e eu gostaria de <B>te deixar à frente do mercado</B>. Queria te mostrar em 15 minutos, pessoalmente ou por vídeo. <B>Me diz um horário bom pra você que eu te ligo.</B> Abraço!&quot;
+        &quot;Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC. Antes que você pergunte de onde tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>, lembra? Te liguei porque <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>. Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. São 15 minutos, pessoalmente ou por vídeo. <B>Me diz um horário bom.</B> Abraço!&quot;
       </>
     ),
-    nota: 'Cerca de 80 palavras = 35 segundos. Gravar logo depois da ligação.',
+    nota: 'Cerca de 85 palavras = 37 segundos. Gravar logo depois da ligação.',
   },
   {
     titulo: '3 · Mensagem escrita (não atendeu no dia 2)',
     texto: (
       <>
-        Oi, [nome], tudo bem? [Corretor], da Nox Imóveis.
+        Oi, [nome], tudo bem? É o [seu nome], aqui de Penha, SC.
         <br />
-        Tentei te ligar ontem e hoje. Estamos com uma <B>oportunidade de mercado que ainda não foi lançada aqui em Penha</B> e eu gostaria de te deixar à frente do mercado.
+        Antes que você pergunte de onde tenho teu contato: faz um tempo você <B>se cadastrou numa campanha nossa</B>, lembra?
         <br />
-        Me diz um horário que eu te ligo — ou marco 15 minutos com você, pessoalmente ou por vídeo.
+        Te liguei porque <B>preciso te mostrar uma coisa</B>: um bairro planejado no centro de Penha, entre o Beto Carrero e a praia, <B>que ainda nem foi lançado</B>.
+        <br />
+        Preparamos uma apresentação com <B>tudo o que faz de Penha o lugar certo pra investir</B>. São 15 minutos, pessoalmente ou por vídeo. <B>Me diz um horário bom.</B> Abraço!
       </>
     ),
-    nota: 'Mesmo teor do áudio do dia anterior, por escrito e curto.',
+    nota: 'O mesmo texto do áudio do dia anterior, por escrito.',
   },
 ];
 
