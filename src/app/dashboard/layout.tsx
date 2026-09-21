@@ -9,6 +9,7 @@ import { ConfirmDialogHost } from '@/components/ui/ConfirmDialog';
 import { ToastHost, showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 import AdsLeadCard from '@/components/AdsLeadCard';
+import ConviteMeetCard from '@/components/ConviteMeetCard';
 import AtendimentoWatcher from '@/components/atendimento/AtendimentoWatcher';
 import { ativarNotificacoes, initPushSilencioso, pushJaAtivado, pushSupported } from '@/lib/push';
 import { podeVerAyra } from '@/lib/ayra';
@@ -486,6 +487,7 @@ export default function DashboardLayout({
       </nav>
 
       <AdsLeadCard />
+      <ConviteMeetCard />
       <AtendimentoWatcher />
       <ConfirmDialogHost />
       <ToastHost />

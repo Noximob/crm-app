@@ -21,6 +21,7 @@ import {
 } from '@/lib/circuito';
 import { toJsDate } from '@/lib/leadTasks';
 import MoneyInput from '@/components/MoneyInput';
+import { useColegas } from '@/lib/convitesMeet';
 
 // ---------------------------------------------------------------------------
 // Tipos compartilhados com a página
@@ -56,6 +57,8 @@ export interface AcaoCircuito {
     origem: 'lead' | 'carteira' | 'ligacao_ativa' | 'outro';
   };
   transferirParaGestor?: boolean;
+  /** Colegas chamados pro meet — viram convite (pop-up e aviso no celular deles). */
+  convidados?: { id: string; nome: string }[];
 }
 
 /** Estados do fluxo — cada um é um pop-up; flags carregam contexto entre eles. */
@@ -91,6 +94,8 @@ export type EstadoFluxo =
   | { t: 'visitaGostou' }
   | { t: 'visitaRemarca'; cancelarTaskId?: string }
   | { t: 'agendarData'; tipo: 'Meet' | 'Visita'; cancelarTaskId?: string; remarcando?: boolean; contato?: boolean }
+  /** Meet escolhido: pergunta quem mais vai antes de gravar (nada foi salvo ainda). */
+  | { t: 'convidar'; acao: AcaoCircuito; quando: Date; toast: string }
   | { t: 'requalifica' }
   | { t: 'negPrazo'; concluirTaskId?: string; cancelarTaskId?: string }
   | { t: 'negQ'; taskId?: string }
@@ -312,6 +317,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   } = props;
 
   const [estado, setEstado] = useState<EstadoFluxo>(estadoInicial);
+  // Colegas da casa, pro passo "chamar alguém" do meet. Carrega quando o
+  // pop-up abre; sem colegas (ou no espelho) o passo nem aparece.
+  const colegas = useColegas(aberto && !isDemo);
 
   // Pilha de navegação: todo passo tem "‹ voltar" — MENOS depois de algo já
   // gravado no banco (aí a pilha é zerada; não dá pra desfazer voltando).
@@ -325,6 +333,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   };
   // seleções dos chips / inputs (resetam a cada troca de estado)
   const [acaoSel, setAcaoSel] = useState('');
+  /** Ids dos colegas marcados no passo do convite. */
+  const [convidadosSel, setConvidadosSel] = useState<string[]>([]);
   const [quandoSel, setQuandoSel] = useState('');
   const [dataStr, setDataStr] = useState('');
   const [horaStr, setHoraStr] = useState('10:00');
@@ -350,7 +360,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   }, [aberto, estadoInicial]);
 
   useEffect(() => {
-    setAcaoSel(''); setQuandoSel(''); setDataStr(''); setHoraStr('10:00');
+    setAcaoSel(''); setQuandoSel(''); setDataStr(''); setHoraStr('10:00'); setConvidadosSel([]);
     setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setObsStr(''); setAviso('');
     setVendaVal(0); setVendaEmp(''); setVendaTipo('lancamento'); setVendaOrigem('');
   }, [estado.t]);
@@ -427,6 +437,19 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const notesComObs = (notes: string) => (obsFinal() ? `${notes} · 📝 ${obsFinal()}` : notes);
 
   const fecha = (msg?: string) => onConcluido(msg);
+
+  /**
+   * Meet marcado: antes de gravar, o pop-up pergunta quem mais vai. Sem colegas
+   * na casa (ou no espelho), grava direto — o fluxo continua o de sempre.
+   */
+  const seguirDoMeet = async (acao: AcaoCircuito, quando: Date, toast: string) => {
+    if (isDemo || colegas.length === 0) {
+      const ok = await executar(acao);
+      if (ok) fecha(toast);
+      return;
+    }
+    irPara({ t: 'convidar', acao, quando, toast });
+  };
 
   // ------------------------------------------------------------------
   // Definição de cada pop-up (bar, body, botões) — textos do protótipo
@@ -519,7 +542,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             // remarcou TROCANDO a ação (era ligação, virou WhatsApp) — a linha do tempo conta a história
             a.inter = tipoCancelado === a.tipo ? `📌 ${a.tipo} remarcad${a.tipo === 'Ligação' ? 'a' : 'o'}` : `📌 Remarcado: ${tipoCancelado} → ${a.tipo}`;
           }
-          const ok = await executar({
+          const acao: AcaoCircuito = {
             novaEtapa: a.etapa,
             concluirTaskId: m.concluirTaskId,
             cancelarTaskId: m.cancelarTaskId,
@@ -527,8 +550,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             circuitoTentativas: 'zero',
             contatoEfetivo: m.contato,
             interacao: { type: a.tipo, notes: notesComObs(`${a.inter} · ${fmtDataHora(d!)}`) },
-          });
-          if (ok) fecha(`✓ ${nomeCliente} registrado. Próxima ação: ${a.toast} ${quandoLabel(d!)}.`);
+          };
+          const msg = `✓ ${nomeCliente} registrado. Próxima ação: ${a.toast} ${quandoLabel(d!)}.`;
+          // Meet é o único compromisso que pode ter outro corretor junto.
+          if (a.tipo === TIPO_TAREFA_MEET) { await seguirDoMeet(acao, d!, msg); return; }
+          const ok = await executar(acao);
+          if (ok) fecha(msg);
         };
         // Dois andares: primeiro O QUE (três grupos), depois QUANDO — o
         // seletor de data só aparece com a ação escolhida, senão a tela vira
@@ -820,15 +847,75 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               const d = dataValidada();
               if (!d) return;
               const ehMeet = m.tipo === 'Meet';
-              const ok = await executar({
+              const acao: AcaoCircuito = {
                 novaEtapa: ehMeet ? ETAPA_MEET_AGENDADO : ETAPA_VISITA_AGENDADA,
                 cancelarTaskId: m.cancelarTaskId,
                 novaTarefa: { description: descComObs(`${m.tipo} com ${nome}`), type: ehMeet ? TIPO_TAREFA_MEET : TIPO_TAREFA_VISITA, dueDate: d },
                 circuitoTentativas: 'zero',
                 interacao: { type: m.tipo, notes: notesComObs(`📌 ${m.tipo} ${m.remarcando ? 'remarcad' : 'marcad'}${ehMeet ? 'o' : 'a'} · ${fmtDataHora(d)}`) },
-              });
-              if (ok) fecha(`✓ ${m.tipo} com ${nomeCliente}: ${quandoLabel(d)}.`);
+              };
+              const msg = `✓ ${m.tipo} com ${nomeCliente}: ${quandoLabel(d)}.`;
+              if (ehMeet) { await seguirDoMeet(acao, d, msg); return; }
+              const ok = await executar(acao);
+              if (ok) fecha(msg);
             },
+          }],
+        };
+      }
+
+      case 'convidar': {
+        const m = estado;
+        const escolhidos = () => colegas.filter(c => convidadosSel.includes(c.id)).map(c => ({ id: c.id, nome: c.nome }));
+        const confirmar = async () => {
+          const quem = escolhidos();
+          // Os convites vão no MESMO batch da tarefa: ou nasce tudo, ou nada.
+          const acao: AcaoCircuito = quem.length
+            ? {
+                ...m.acao,
+                convidados: quem,
+                interacao: { ...m.acao.interacao, notes: `${m.acao.interacao.notes} · 👥 com ${quem.map(c => c.nome).join(', ')}` },
+              }
+            : m.acao;
+          const ok = await executar(acao);
+          if (ok) fecha(quem.length ? `${m.toast} Convite enviado pra ${quem.map(c => c.nome).join(', ')}.` : m.toast);
+        };
+        const primeiro = escolhidos()[0]?.nome.split(' ')[0] || '';
+        return {
+          bar: 'Meet · chamar alguém?',
+          body: (
+            <>
+              Quer chamar alguém pro meet com {b(nomeCliente)}, {quandoLabel(m.quando)}?
+              <div className="flex flex-wrap gap-1.5 my-2">
+                {colegas.map(c => {
+                  const on = convidadosSel.includes(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setConvidadosSel(p => (on ? p.filter(x => x !== c.id) : [...p, c.id]))}
+                      className={`text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+                        on
+                          ? 'bg-[#E8C547]/10 border-[#E8C547] text-[#E8C547] font-bold'
+                          : 'bg-white/[0.04] border-white/15 text-white/70 hover:border-[#E8C547]/60'
+                      }`}
+                    >
+                      {on ? '✓ ' : ''}{c.nome}
+                    </button>
+                  );
+                })}
+              </div>
+              <small>Quem você marcar recebe o convite na hora: pop-up no sistema e aviso no celular. Aceitando, entra no lembrete de 1 hora antes.</small>
+            </>
+          ),
+          btns: [{
+            t: executando
+              ? 'Marcando…'
+              : convidadosSel.length === 0
+                ? 'Marcar sem chamar ninguém ✓'
+                : convidadosSel.length === 1
+                  ? `Convidar ${primeiro} e marcar ✓`
+                  : `Convidar ${convidadosSel.length} e marcar ✓`,
+            c: 'primary',
+            f: confirmar,
           }],
         };
       }

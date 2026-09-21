@@ -29,6 +29,9 @@ export {
     importarLeadsExistentes,
 } from "./distribuicaoAds";
 
+// Meet com mais de um corretor: convite + lembrete de 1 hora antes
+export {notificarConviteMeet, lembreteMeet1h} from "./meets";
+
 // Define a estrutura esperada dos dados para clareza
 interface Automacao {
     status: "inativa" | "ativa" | "cancelada";

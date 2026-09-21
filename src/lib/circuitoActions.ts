@@ -62,13 +62,38 @@ export async function executarAcaoCircuito(params: {
     if (acao.novaTarefa) {
       const ref = doc(tasksCol);
       novaTaskId = ref.id;
+      const convidados = acao.convidados || [];
       batch.set(ref, {
         description: acao.novaTarefa.description,
         type: acao.novaTarefa.type,
         dueDate: acao.novaTarefa.dueDate,
         status: 'pendente',
+        // Dono NA PRÓPRIA tarefa: o lembrete de 1 hora varre as tarefas por
+        // collectionGroup e não abriria o lead só pra saber de quem elas são.
+        userId: lead.userId || currentUid,
+        ...(convidados.length ? { convidadosIds: convidados.map(c => c.id) } : {}),
       });
       pendentes = [...pendentes, { id: ref.id, description: acao.novaTarefa.description, type: acao.novaTarefa.type, dueDate: acao.novaTarefa.dueDate }];
+
+      // Um convite por colega chamado, no MESMO batch da tarefa. O pop-up e o
+      // push do outro corretor nascem daqui (functions/src/meets.ts escuta).
+      convidados.forEach(c => {
+        batch.set(doc(collection(db, 'convitesMeet')), {
+          imobiliariaId,
+          leadId: lead.id,
+          leadNome: lead.nome || '',
+          taskId: novaTaskId,
+          tipo: acao.novaTarefa!.type,
+          descricao: acao.novaTarefa!.description,
+          quando: Timestamp.fromDate(acao.novaTarefa!.dueDate),
+          de: currentUid,
+          deNome: autorNome || '',
+          para: c.id,
+          paraNome: c.nome || '',
+          status: 'pendente',
+          criadoEm: serverTimestamp(),
+        });
+      });
     }
 
     const leadUpdate: Record<string, any> = mexeuEmTarefa ? { tarefasPendentes: pendentes } : {};
