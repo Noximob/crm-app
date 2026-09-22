@@ -1,8 +1,8 @@
 /**
  * AYRA — o espaço do pré-lançamento (Nox Imóveis × Santer).
  *
- * São três coisas, e só elas: o cronograma da equipe, as mídias de apoio
- * (as artes de WhatsApp) e a apresentação.
+ * O cronograma da equipe, as mídias de apoio (as artes de WhatsApp) e as
+ * apresentações — a primeira e a V2, cada uma na sua pasta.
  *
  * ONDE MORAM OS ARQUIVOS: em public/ayra, no próprio repositório — vão pro ar
  * junto com o site a cada push, sem upload manual. Não é o Firebase Storage
@@ -23,6 +23,13 @@ export const AYRA_BASE = '/ayra';
 
 /** O index.html da pasta "Ayra - Apresentacao (HTML com videos)", intocado. */
 export const AYRA_APRESENTACAO = `${AYRA_BASE}/apresentacao/index.html`;
+
+/**
+ * A versão mais nova: a pasta "Ayra - Apresentacao v3 (HTML com videos)",
+ * também intocada. Na tela ela se chama "Apresentação V2" — foi o nome que o
+ * gestor pediu no botão, e é por ele que a equipe vai procurar.
+ */
+export const AYRA_APRESENTACAO_V2 = `${AYRA_BASE}/apresentacao-v2/index.html`;
 
 export const AYRA_AGENDA_PDF = `${AYRA_BASE}/agenda-acao-ayra.pdf`;
 /** O nome com que o PDF sai no download — o mesmo do arquivo aprovado. */

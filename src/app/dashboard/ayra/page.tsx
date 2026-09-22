@@ -3,10 +3,11 @@
 /**
  * AYRA — o espaço do pré-lançamento Nox Imóveis × Santer.
  *
- * Três botões pequenos em cima, e só isso:
+ * Botões pequenos em cima, e só isso:
  *   · Cronograma do pessoal — a agenda de ação, escrita na tela;
  *   · Mídias de Apoio       — as artes de WhatsApp, com pop-up e download;
- *   · Apresentação          — a apresentação aprovada, intocada. F11 = tela cheia.
+ *   · Apresentação          — a apresentação aprovada, intocada. F11 = tela cheia;
+ *   · Apresentação V2       — a versão nova (pasta v3), do mesmo jeito.
  *
  * A aba escolhida vai pra URL (?aba=), então dá pra mandar o link direto.
  */
@@ -14,22 +15,26 @@ import React, { useEffect, useState } from 'react';
 import Cronograma from './_components/Cronograma';
 import Midias from './_components/Midias';
 import Apresentacao from './_components/Apresentacao';
+import { AYRA_APRESENTACAO_V2 } from '@/lib/ayra';
 
-type Aba = 'cronograma' | 'midias' | 'apresentacao';
+type Aba = 'cronograma' | 'midias' | 'apresentacao' | 'apresentacao-v2';
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: 'cronograma', rotulo: 'Cronograma do pessoal' },
   { id: 'midias', rotulo: 'Mídias de Apoio' },
   { id: 'apresentacao', rotulo: 'Apresentação' },
+  { id: 'apresentacao-v2', rotulo: 'Apresentação V2' },
 ];
 
-const ehAba = (v: string | null): v is Aba => v === 'cronograma' || v === 'midias' || v === 'apresentacao';
+const ehAba = (v: string | null): v is Aba =>
+  v === 'cronograma' || v === 'midias' || v === 'apresentacao' || v === 'apresentacao-v2';
 
 export default function AyraPage() {
   const [aba, setAba] = useState<Aba>('cronograma');
-  // A apresentação só carrega quando é aberta (os vídeos somam ~40 MB) e
-  // depois fica montada: ir nas mídias e voltar não recomeça do slide 1.
+  // Cada apresentação só carrega quando é aberta (os vídeos somam dezenas de
+  // MB) e depois fica montada: ir nas mídias e voltar não recomeça do slide 1.
   const [apresentacaoMontada, setApresentacaoMontada] = useState(false);
+  const [v2Montada, setV2Montada] = useState(false);
 
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get('aba');
@@ -38,6 +43,7 @@ export default function AyraPage() {
 
   useEffect(() => {
     if (aba === 'apresentacao') setApresentacaoMontada(true);
+    if (aba === 'apresentacao-v2') setV2Montada(true);
   }, [aba]);
 
   const trocar = (a: Aba) => {
@@ -78,6 +84,13 @@ export default function AyraPage() {
       {aba === 'cronograma' && <Cronograma />}
       {aba === 'midias' && <Midias />}
       {apresentacaoMontada && <Apresentacao ativa={aba === 'apresentacao'} />}
+      {v2Montada && (
+        <Apresentacao
+          ativa={aba === 'apresentacao-v2'}
+          src={AYRA_APRESENTACAO_V2}
+          titulo="Ayra — Apresentação V2"
+        />
+      )}
     </div>
   );
 }

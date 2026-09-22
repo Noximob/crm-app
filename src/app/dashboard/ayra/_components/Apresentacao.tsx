@@ -12,6 +12,8 @@
  * voltaria pro slide 1 no meio da reunião.
  *
  * O "F" da própria apresentação (tela cheia dela) também continua valendo.
+ *
+ * O mesmo componente serve as duas apresentações: muda só o `src`.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { AYRA_APRESENTACAO } from '@/lib/ayra';
@@ -51,7 +53,11 @@ function useTelaCheiaDoNavegador(): boolean {
   return cheia;
 }
 
-export default function Apresentacao({ ativa }: { ativa: boolean }) {
+export default function Apresentacao({
+  ativa,
+  src = AYRA_APRESENTACAO,
+  titulo = 'Ayra — Apresentação de pré-lançamento',
+}: { ativa: boolean; src?: string; titulo?: string }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const ativaRef = useRef(ativa);
   ativaRef.current = ativa;
@@ -105,8 +111,8 @@ export default function Apresentacao({ ativa }: { ativa: boolean }) {
       >
         <iframe
           ref={frame}
-          src={AYRA_APRESENTACAO}
-          title="Ayra — Apresentação de pré-lançamento"
+          src={src}
+          title={titulo}
           className="absolute inset-0 w-full h-full border-0"
           allow="autoplay; fullscreen"
           allowFullScreen
