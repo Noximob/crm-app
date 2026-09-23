@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * A APRESENTAÇÃO — a pasta "Ayra - Apresentacao (HTML com videos)" do jeito
- * que veio, servida de public/ayra/apresentacao num iframe do mesmo site.
- * Nada do index.html nem das pastas dele é tocado.
+ * O QUADRO — o que vem pronto (a apresentação e o mapa de Penha) servido de
+ * public/ayra num iframe do mesmo site, do jeito que veio. Nada do index.html
+ * nem das pastas de cada um é tocado.
  *
  * F11 põe o NAVEGADOR em tela cheia, mas a página continua a mesma — com o
  * menu do sistema em volta. Então este componente percebe a tela cheia e
@@ -13,10 +13,10 @@
  *
  * O "F" da própria apresentação (tela cheia dela) também continua valendo.
  *
- * O mesmo componente serve as duas apresentações: muda só o `src`.
+ * O mesmo componente serve a apresentação e o mapa: muda o `src` e a dica
+ * do rodapé.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { AYRA_APRESENTACAO } from '@/lib/ayra';
 
 /**
  * O navegador está em tela cheia? F11 não dispara evento próprio: lê-se pelo
@@ -53,11 +53,18 @@ function useTelaCheiaDoNavegador(): boolean {
   return cheia;
 }
 
+const DICA_APRESENTACAO = (
+  <>
+    <b className="text-white/80">F11</b> apresenta em tela cheia, só a apresentação · <b className="text-white/80">← →</b> passam os slides
+  </>
+);
+
 export default function Apresentacao({
   ativa,
-  src = AYRA_APRESENTACAO,
-  titulo = 'Ayra — Apresentação de pré-lançamento',
-}: { ativa: boolean; src?: string; titulo?: string }) {
+  src,
+  titulo,
+  dica = DICA_APRESENTACAO,
+}: { ativa: boolean; src: string; titulo: string; dica?: React.ReactNode }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const ativaRef = useRef(ativa);
   ativaRef.current = ativa;
@@ -120,9 +127,7 @@ export default function Apresentacao({
         />
       </div>
       {!telaCheia && (
-        <p className="text-center text-[11px] text-text-secondary mt-2">
-          <b className="text-white/80">F11</b> apresenta em tela cheia, só a apresentação · <b className="text-white/80">← →</b> passam os slides
-        </p>
+        <p className="text-center text-[11px] text-text-secondary mt-2">{dica}</p>
       )}
     </div>
   );

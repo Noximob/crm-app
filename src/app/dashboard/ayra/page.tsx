@@ -4,10 +4,10 @@
  * AYRA — o espaço do pré-lançamento Nox Imóveis × Santer.
  *
  * Botões pequenos em cima, e só isso:
- *   · Cronograma do pessoal — a agenda de ação, escrita na tela;
- *   · Mídias de Apoio       — as artes de WhatsApp, com pop-up e download;
- *   · Apresentação          — a apresentação aprovada, intocada. F11 = tela cheia;
- *   · Apresentação V2       — a versão nova (pasta v3), do mesmo jeito.
+ *   · Cronograma do pessoal    — a agenda de ação, escrita na tela;
+ *   · Mídias de Apoio          — as artes de WhatsApp, com pop-up e download;
+ *   · Apresentação V2          — a apresentação oficial, intocada. F11 = tela cheia;
+ *   · Mapa Interativo de Penha — o mapa 3D, do mesmo jeito, também em F11.
  *
  * A aba escolhida vai pra URL (?aba=), então dá pra mandar o link direto.
  */
@@ -15,26 +15,26 @@ import React, { useEffect, useState } from 'react';
 import Cronograma from './_components/Cronograma';
 import Midias from './_components/Midias';
 import Apresentacao from './_components/Apresentacao';
-import { AYRA_APRESENTACAO_V2 } from '@/lib/ayra';
+import { AYRA_APRESENTACAO_V2, AYRA_MAPA } from '@/lib/ayra';
 
-type Aba = 'cronograma' | 'midias' | 'apresentacao' | 'apresentacao-v2';
+type Aba = 'cronograma' | 'midias' | 'apresentacao-v2' | 'mapa';
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: 'cronograma', rotulo: 'Cronograma do pessoal' },
   { id: 'midias', rotulo: 'Mídias de Apoio' },
-  { id: 'apresentacao', rotulo: 'Apresentação' },
   { id: 'apresentacao-v2', rotulo: 'Apresentação V2' },
+  { id: 'mapa', rotulo: 'Mapa Interativo de Penha' },
 ];
 
 const ehAba = (v: string | null): v is Aba =>
-  v === 'cronograma' || v === 'midias' || v === 'apresentacao' || v === 'apresentacao-v2';
+  v === 'cronograma' || v === 'midias' || v === 'apresentacao-v2' || v === 'mapa';
 
 export default function AyraPage() {
   const [aba, setAba] = useState<Aba>('cronograma');
-  // Cada apresentação só carrega quando é aberta (os vídeos somam dezenas de
-  // MB) e depois fica montada: ir nas mídias e voltar não recomeça do slide 1.
-  const [apresentacaoMontada, setApresentacaoMontada] = useState(false);
+  // Apresentação e mapa são pesados (vídeos, Cesium): cada um só carrega quando
+  // é aberto e depois fica montado — sair e voltar não recomeça do zero.
   const [v2Montada, setV2Montada] = useState(false);
+  const [mapaMontado, setMapaMontado] = useState(false);
 
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get('aba');
@@ -42,8 +42,8 @@ export default function AyraPage() {
   }, []);
 
   useEffect(() => {
-    if (aba === 'apresentacao') setApresentacaoMontada(true);
     if (aba === 'apresentacao-v2') setV2Montada(true);
+    if (aba === 'mapa') setMapaMontado(true);
   }, [aba]);
 
   const trocar = (a: Aba) => {
@@ -83,12 +83,19 @@ export default function AyraPage() {
 
       {aba === 'cronograma' && <Cronograma />}
       {aba === 'midias' && <Midias />}
-      {apresentacaoMontada && <Apresentacao ativa={aba === 'apresentacao'} />}
       {v2Montada && (
         <Apresentacao
           ativa={aba === 'apresentacao-v2'}
           src={AYRA_APRESENTACAO_V2}
           titulo="Ayra — Apresentação V2"
+        />
+      )}
+      {mapaMontado && (
+        <Apresentacao
+          ativa={aba === 'mapa'}
+          src={AYRA_MAPA}
+          titulo="Mapa Interativo de Penha"
+          dica={<><b className="text-white/80">F11</b> abre o mapa em tela cheia — é assim que ele fica bom pra apresentar</>}
         />
       )}
     </div>

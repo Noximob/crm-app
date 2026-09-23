@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0614" />
+    <title>Penha 3D · Nox Imóveis</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      window.CESIUM_BASE_URL = new URL("cesium/", document.baseURI).href;
+    </script>
+    <script type="module" crossorigin src="./assets/index-BXKjMcsp.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D4jBB_J_.css">
+  </head>
+  <body>
+    <div id="mapa"></div>
+    <div id="pins"></div>
+
+    <header class="marca">
+      <img class="marca-logo-img" src="./midia/nox_logo_white.png" alt="Nox Imóveis" />
+      <span class="marca-texto"><strong>Penha 3D</strong></span>
+    </header>
+
+    <button id="visao-geral" class="botao-flutuante" type="button">Visão geral</button>
+
+    <div class="zoom">
+      <button id="zoom-mais" type="button" aria-label="Aproximar">+</button>
+      <button id="zoom-menos" type="button" aria-label="Afastar">−</button>
+    </div>
+
+    <p id="aviso" class="aviso" hidden></p>
+
+    <section id="card" class="card" hidden aria-live="polite">
+      <button id="card-fechar" class="card-fechar" type="button" aria-label="Fechar">×</button>
+      <h2 id="card-nome"></h2>
+      <figure id="card-figura" class="card-figura" hidden>
+        <img id="card-foto" alt="" />
+        <figcaption id="card-credito"></figcaption>
+      </figure>
+      <p id="card-texto"></p>
+      <button id="card-passear" class="botao-primario" type="button">
+        <span aria-hidden="true">▶</span> <span id="card-passear-rotulo">Passear</span>
+      </button>
+      <div class="card-acoes">
+        <button id="card-video" class="botao-secundario" type="button">Ver vídeo</button>
+      </div>
+      <p id="card-info" class="card-info"></p>
+    </section>
+
+    <section id="hud" class="hud" hidden>
+      <div class="hud-linha">
+        <div class="hud-textos">
+          <p id="hud-titulo" class="hud-titulo"></p>
+          <p id="hud-rua" class="hud-rua"></p>
+        </div>
+        <div class="hud-acoes">
+          <button id="hud-pausar" type="button">Pausar</button>
+          <button id="hud-parar" type="button">Sair</button>
+        </div>
+      </div>
+      <div class="hud-barra"><div id="hud-progresso" class="hud-progresso"></div></div>
+    </section>
+
+    <div id="video-overlay" class="video-overlay" hidden>
+      <button id="video-fechar" class="video-fechar" type="button" aria-label="Fechar">×</button>
+      <video id="video-player" controls playsinline preload="metadata"></video>
+      <p id="video-legenda" class="video-legenda"></p>
+    </div>
+
+    <div id="carregando" class="carregando">
+      <img class="marca-logo-img grande" src="./midia/nox_logo_white.png" alt="Nox Imóveis" />
+      <p id="carregando-texto">Carregando Penha em 3D…</p>
+    </div>
+
+  </body>
+</html>
