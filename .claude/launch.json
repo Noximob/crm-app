@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "-p", "3377"],
       "port": 3377
+    },
+    {
+      "name": "mapa-penha",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:/Users/Usuario/Desktop/mapa-penha", "run", "dev"],
+      "port": 5199
     }
   ]
 }
