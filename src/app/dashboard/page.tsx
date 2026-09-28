@@ -17,6 +17,7 @@ import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
 import LoadingState from '@/components/ui/LoadingState';
 import TourInicial from '@/components/TourInicial';
+import ConvitesMeetPainel from '@/components/ConvitesMeetPainel';
 
 interface MetaPessoalData {
   valorAlmejado: number;
@@ -1072,6 +1073,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
+      {/* Convites de meet sem resposta — só aparece quando tem algum */}
+      <ConvitesMeetPainel modo="inicio" />
       {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
       <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 

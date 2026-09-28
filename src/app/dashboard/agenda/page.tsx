@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, T
 import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
 import DayAgendaModal from './_components/DayAgendaModal';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import ConvitesMeetPainel from '@/components/ConvitesMeetPainel';
 import {
   DEMO_AGENDA_ITEMS,
   DEMO_AGENDA_IMOBILIARIA,
@@ -717,6 +718,9 @@ export default function AgendaPage() {
             Novo Compromisso
           </button>
         </div>
+
+        {/* Convites de meet: os que esperam resposta, os que você vai, os que recusou */}
+        <ConvitesMeetPainel modo="agenda" />
 
         {/* Filtros e Controles */}
         <div className="al-card relative overflow-hidden p-6 mb-8">

@@ -8,61 +8,36 @@
  * de anúncio (z-45 contra z-50) e do pop-up de atendimento (z-70) — lead novo
  * e tarefa vencida continuam sendo a coisa mais urgente da tela.
  *
+ * É só o AVISO na hora. Quem não quer decidir agora clica em "responder
+ * depois": o convite continua na tela inicial e na Agenda Completa
+ * (ConvitesMeetPainel), e dá pra responder — ou mudar a resposta — por lá.
+ *
  * Aceitar entra em `participantesIds` da tarefa: é o que te coloca no lembrete
  * de 1 hora antes (functions/src/meets.ts).
  */
-import React, { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { responderConvite, type ConviteMeet } from '@/lib/convitesMeet';
+import {
+  adiarConvite, convitesAdiados, quandoDoConvite, quandoLabel, responderConvite, situacaoDoConvite, useConvitesRecebidos,
+} from '@/lib/convitesMeet';
 import { toJsDate } from '@/lib/leadTasks';
 import { showToast } from '@/components/ui/toast';
 
-const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-const p2 = (n: number) => String(n).padStart(2, '0');
-
-/** "hoje às 15:00" · "amanhã às 15:00" · "sex 12/07 às 15:00" */
-function quandoLabel(d: Date): string {
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const dia = new Date(d); dia.setHours(0, 0, 0, 0);
-  const diff = Math.round((dia.getTime() - hoje.getTime()) / 86_400_000);
-  const hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
-  if (diff === 0) return `hoje às ${hm}`;
-  if (diff === 1) return `amanhã às ${hm}`;
-  return `${DIAS[d.getDay()]} ${p2(d.getDate())}/${p2(d.getMonth() + 1)} às ${hm}`;
-}
-
 export default function ConviteMeetCard() {
   const { currentUser, isEspelhoDemo } = useAuth();
-  const [convites, setConvites] = useState<ConviteMeet[]>([]);
+  const { convites } = useConvitesRecebidos();
   const [respondendo, setRespondendo] = useState(false);
+  const [adiados, setAdiados] = useState<Set<string>>(() => (typeof window === 'undefined' ? new Set<string>() : convitesAdiados()));
 
   const uid = currentUser?.uid;
 
-  useEffect(() => {
-    if (!uid || isEspelhoDemo) { setConvites([]); return; }
-    const q = query(
-      collection(db, 'convitesMeet'),
-      where('para', '==', uid),
-      where('status', '==', 'pendente'),
-    );
-    const unsub = onSnapshot(
-      q,
-      snap => setConvites(snap.docs.map(d => ({ id: d.id, ...d.data() } as ConviteMeet))),
-      () => setConvites([]),
-    );
-    return () => unsub();
-  }, [uid, isEspelhoDemo]);
-
-  /** O meet mais próximo que ainda não passou — convite velho não fica assombrando. */
+  /** O pendente mais próximo que ainda não passou e não foi deixado pra depois. */
   const convite = useMemo(() => {
-    const corte = Date.now() - 5 * 60_000;
+    const agora = Date.now();
     return convites
-      .map(c => ({ c, ms: toJsDate(c.quando)?.getTime() ?? 0 }))
-      .filter(x => x.ms > corte)
-      .sort((a, b) => a.ms - b.ms)[0]?.c ?? null;
-  }, [convites]);
+      .filter(c => situacaoDoConvite(c, agora) === 'pendente' && !adiados.has(c.id))
+      .sort((a, b) => quandoDoConvite(a) - quandoDoConvite(b))[0] ?? null;
+  }, [convites, adiados]);
 
   if (!uid || isEspelhoDemo || !convite) return null;
 
@@ -84,6 +59,12 @@ export default function ConviteMeetCard() {
     } finally {
       setRespondendo(false);
     }
+  };
+
+  const depois = () => {
+    adiarConvite(convite.id);
+    setAdiados(prev => { const n = new Set(prev); n.add(convite.id); return n; });
+    showToast('Fica na tela inicial e na Agenda Completa pra você responder depois.', 'info');
   };
 
   return (
@@ -129,6 +110,15 @@ export default function ConviteMeetCard() {
               {respondendo ? 'Enviando…' : 'Vou participar'}
             </button>
           </div>
+
+          <button
+            onClick={depois}
+            disabled={respondendo}
+            className="mt-2.5 w-full text-center text-[11.5px] font-bold text-text-secondary hover:text-white transition-colors disabled:opacity-60"
+            title="O convite continua na tela inicial e na Agenda Completa"
+          >
+            Responder depois
+          </button>
         </div>
       </div>
     </div>

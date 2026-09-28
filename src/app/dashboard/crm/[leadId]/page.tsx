@@ -11,6 +11,7 @@ import { Lead } from '@/types';
 import CrmHeader, { raizDaCarteira } from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
+import EditarOrigemModal from '../_components/EditarOrigemModal';
 import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito, type EstadoFluxo } from '@/components/atendimento/AtendimentoOverlay';
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
@@ -118,6 +119,10 @@ export default function LeadDetailPage() {
     // A GAVETA: quantos o corretor já guardou (o teto é por corretor)
     const [guardados, setGuardados] = useState<number | null>(null);
     const [mexendoGaveta, setMexendoGaveta] = useState(false);
+    // Corrigir origem / mover entre CRM da casa e Minha rede
+    const [isOrigemModalOpen, setIsOrigemModalOpen] = useState(false);
+    // Convites de meet que saíram deste lead: quem foi chamado e o que respondeu
+    const [convitesDoLead, setConvitesDoLead] = useState<{ taskId: string; paraNome: string; status: string }[]>([]);
 
     // Dirty-guards: não deixar o snapshot do lead atropelar edição em andamento
     const qualDirty = useRef(false);
@@ -226,6 +231,19 @@ export default function LeadDetailPage() {
             setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task)));
             setTasksLoaded(true);
         });
+        return () => unsubscribe();
+    }, [currentUser, leadId, isEspelhoDemo]);
+
+    // --- Convites de meet deste lead (pra mostrar, embaixo do meet, quem vai junto) ---
+    useEffect(() => {
+        if (!currentUser || !leadId || isEspelhoDemo) return;
+        const q = query(collection(db, 'convitesMeet'), where('leadId', '==', leadId));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setConvitesDoLead(snapshot.docs.map(d => {
+                const c = d.data();
+                return { taskId: String(c.taskId || ''), paraNome: String(c.paraNome || 'colega'), status: String(c.status || 'pendente') };
+            }));
+        }, () => setConvitesDoLead([]));
         return () => unsubscribe();
     }, [currentUser, leadId, isEspelhoDemo]);
 
@@ -722,6 +740,16 @@ export default function LeadDetailPage() {
                                             : `💤 Guardar${guardados !== null ? ` (${guardados}/${CAP_INTERESSE_FUTURO})` : ''}`}
                                     </button>
                                 )}
+                                {/* Cadastrou na carteira errada, ou com a origem errada? Corrige aqui — o lead muda de CRM na hora */}
+                                {!readOnly && etapaAtual !== ETAPA_DESCARTADO && (
+                                    <button
+                                        onClick={() => setIsOrigemModalOpen(true)}
+                                        className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border border-white/15 bg-white/[0.04] text-text-secondary hover:text-white hover:border-white/30 transition-colors"
+                                        title="Corrigir a origem ou mover entre o CRM da casa e a Minha rede"
+                                    >
+                                        ✏️ Origem e carteira
+                                    </button>
+                                )}
                                 <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
                                     <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                                     <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
@@ -800,6 +828,13 @@ export default function LeadDetailPage() {
                                                 <p className={`text-[11px] tabular-nums font-bold ${atrasada ? 'text-[#FF7A97]' : 'text-[#FFE9A6]'}`}>
                                                     {due ? fmtDataHora(due) : 'sem data'}{atrasada ? ' · atrasada' : ''}
                                                 </p>
+                                                {convitesDoLead.some(c => c.taskId === t.id) && (
+                                                    <p className="text-[11px] text-text-secondary mt-0.5 truncate" title="Quem você chamou pra este meet e o que cada um respondeu">
+                                                        👥 {convitesDoLead.filter(c => c.taskId === t.id).map(c =>
+                                                            `${c.paraNome.split(' ')[0]} ${c.status === 'aceito' ? '✓ vai' : c.status === 'recusado' ? '✗ não vai' : '⏳ sem resposta'}`
+                                                        ).join(' · ')}
+                                                    </p>
+                                                )}
                                             </div>
                                             {!readOnly && (
                                                 <div className="flex items-center gap-1.5 shrink-0">
@@ -957,6 +992,12 @@ export default function LeadDetailPage() {
                 onClose={() => setIsAgendaModalOpen(false)}
                 onSave={handleSaveTask}
                 isLoading={isSavingTask}
+            />
+
+            <EditarOrigemModal
+                isOpen={isOrigemModalOpen}
+                onClose={() => setIsOrigemModalOpen(false)}
+                lead={lead}
             />
 
             <CancelTaskModal
