@@ -32,7 +32,8 @@ export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
 
 /**
  * A Re-meeting: a V4 reduzida, pra segunda reunião — os mesmos slides, sem
- * nenhuma mudança, em outra ordem (19, 20, 16, 17, 12, 13, 14 e da 21 ao fim).
+ * nenhuma mudança além da numeração (recomeça no 01), em outra ordem: 19, 20,
+ * 16, 17, 21, 12, 13, 14 e da 22 ao fim (números da V4).
  * Fica dentro da pasta da V4 pra usar as mesmas fotos e vídeos, e é gerada
  * por `node scripts/ayra-re-meeting.mjs` — mexeu na V4, roda de novo.
  */
