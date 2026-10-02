@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * MÍDIAS DE APOIO — as artes de WhatsApp de Penha.
+ * MÍDIAS DE APOIO — as artes de WhatsApp de Penha e o vídeo do decorado.
  *
- * As 12 peças da pasta (11 imagens 1080×1350 e 1 vídeo vertical). Clicar
+ * As 12 peças da pasta (11 imagens 1080×1350 e 1 vídeo vertical) e o vídeo
+ * do decorado da apresentação (vertical, 1 min). Clicar
  * abre maior num pop-up que rola — a arte é alta e precisa ser vista
  * inteira. Cada uma baixa com o nome original do arquivo.
  */

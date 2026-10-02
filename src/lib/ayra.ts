@@ -69,7 +69,9 @@ export interface MidiaAyra {
 
 /**
  * As peças da pasta "Artes WhatsApp - Penha", na ordem dos arquivos.
- * Os títulos são os do "LEGENDAS SUGERIDAS.txt" da mesma pasta.
+ * Os títulos são os do "LEGENDAS SUGERIDAS.txt" da mesma pasta. A última, o
+ * vídeo do decorado, é o mesmo arquivo da Apresentação V4 (video/decorado.mp4),
+ * pra equipe mandar pros clientes.
  */
 export const MIDIAS_AYRA: MidiaAyra[] = [
   { arquivo: '01_beto_carrero_2bi.jpg', titulo: 'Beto Carrero R$ 2 bi', tipo: 'imagem' },
@@ -84,6 +86,7 @@ export const MIDIAS_AYRA: MidiaAyra[] = [
   { arquivo: '09_praias.jpg', titulo: 'Praias', tipo: 'imagem' },
   { arquivo: '10_aeroporto_regiao.jpg', titulo: 'Aeroporto e região', tipo: 'imagem' },
   { arquivo: '11_masterplan.jpg', titulo: 'Masterplan Jaime Lerner', tipo: 'imagem' },
+  { arquivo: '12_decorado_video.mp4', titulo: 'Decorado (vídeo)', tipo: 'video' },
 ];
 
 export const urlMidia = (m: MidiaAyra) => `${AYRA_BASE}/midias/${m.arquivo}`;
