@@ -7,7 +7,7 @@
  *   · Cronograma do pessoal    — a agenda de ação, escrita na tela;
  *   · Mídias de Apoio          — as artes de WhatsApp, com pop-up e download;
  *   · Apresentação V2          — a apresentação oficial, intocada. F11 = tela cheia;
- *   · Apresentação V4          — a versão nova (54 slides), do mesmo jeito;
+ *   · Apresentação V4          — a versão nova (56 slides), do mesmo jeito;
  *   · Mapa Interativo de Penha — o mapa 3D, do mesmo jeito, também em F11.
  *
  * A aba escolhida vai pra URL (?aba=), então dá pra mandar o link direto.
