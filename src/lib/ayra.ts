@@ -2,7 +2,7 @@
  * AYRA — o espaço do pré-lançamento (Nox Imóveis × Santer).
  *
  * O cronograma da equipe, as mídias de apoio (as artes de WhatsApp), a
- * apresentação oficial (a V4), a Re-meeting e o mapa interativo de Penha.
+ * apresentação oficial (a V4), a V5, a Re-meeting e o mapa interativo de Penha.
  *
  * ONDE MORAM OS ARQUIVOS: em public/ayra, no próprio repositório — vão pro ar
  * junto com o site a cada push, sem upload manual. Não é o Firebase Storage
@@ -29,6 +29,16 @@ export const AYRA_BASE = '/ayra';
  * foram apagadas a pedido do gestor — estão no histórico do git.
  */
 export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
+
+/**
+ * A versão 5 (02/10/2026): a pasta "Ayra - Apresentacao v5 (HTML com videos)"
+ * — 53 slides (capa + 52), mesmas fotos e vídeos da V4 em outra ordem. A
+ * pedido do gestor, nas 2 fotos da localização (Localização e Sistema viário)
+ * fica marcado só o Ayra: o terreno da Santer (250 mil m²) saiu. A mudança
+ * foi feita na fonte (fonte/make_build5.py, bloco "v5c") e o index.html daqui
+ * é o que ela gera — a pasta do Desktop foi atualizada junto.
+ */
+export const AYRA_APRESENTACAO_V5 = `${AYRA_BASE}/apresentacao-v5/index.html`;
 
 /**
  * A Re-meeting: a V4 reduzida, pra segunda reunião — os mesmos slides, sem
