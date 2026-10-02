@@ -2,7 +2,7 @@
  * AYRA — o espaço do pré-lançamento (Nox Imóveis × Santer).
  *
  * O cronograma da equipe, as mídias de apoio (as artes de WhatsApp), a
- * apresentação oficial (a V2) e o mapa interativo de Penha.
+ * apresentação oficial (a V4), a Re-meeting e o mapa interativo de Penha.
  *
  * ONDE MORAM OS ARQUIVOS: em public/ayra, no próprio repositório — vão pro ar
  * junto com o site a cada push, sem upload manual. Não é o Firebase Storage
@@ -22,19 +22,21 @@
 export const AYRA_BASE = '/ayra';
 
 /**
- * A apresentação oficial: a pasta "Ayra - Apresentacao v3 (HTML com videos)",
- * intocada. Na tela ela se chama "Apresentação V2" — foi o nome que o gestor
- * pediu no botão, e é por ele que a equipe procura. A primeira apresentação
- * foi apagada em 23/09/2026, a pedido dele (está no histórico do git).
- */
-export const AYRA_APRESENTACAO_V2 = `${AYRA_BASE}/apresentacao-v2/index.html`;
-
-/**
- * A versão 4 (02/10/2026): a pasta "Ayra - Apresentacao v4 (HTML com videos)",
- * intocada — 56 slides e 5 vídeos, inclusive o do decorado. O .bat e o
- * serve.ps1 da pasta original só servem pra abrir no computador e ficaram de fora.
+ * A apresentação oficial, versão 4 (02/10/2026): a pasta "Ayra - Apresentacao
+ * v4 (HTML com videos)", intocada — 56 slides e 5 vídeos, inclusive o do
+ * decorado. O .bat e o serve.ps1 da pasta original só servem pra abrir no
+ * computador e ficaram de fora. A primeira apresentação (23/09) e a V2 (02/10)
+ * foram apagadas a pedido do gestor — estão no histórico do git.
  */
 export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
+
+/**
+ * A Re-meeting: a V4 reduzida, pra segunda reunião — os mesmos slides, sem
+ * nenhuma mudança, em outra ordem (19, 20, 16, 17, 12, 13, 14 e da 21 ao fim).
+ * Fica dentro da pasta da V4 pra usar as mesmas fotos e vídeos, e é gerada
+ * por `node scripts/ayra-re-meeting.mjs` — mexeu na V4, roda de novo.
+ */
+export const AYRA_RE_MEETING = `${AYRA_BASE}/apresentacao-v4/re-meeting.html`;
 
 /**
  * O Mapa Interativo de Penha: o `dist` do projeto Desktop/mapa-penha (Vite +

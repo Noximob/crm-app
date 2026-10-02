@@ -6,8 +6,8 @@
  * Botões pequenos em cima, e só isso:
  *   · Cronograma do pessoal    — a agenda de ação, escrita na tela;
  *   · Mídias de Apoio          — as artes de WhatsApp, com pop-up e download;
- *   · Apresentação V2          — a apresentação oficial, intocada. F11 = tela cheia;
- *   · Apresentação V4          — a versão nova (56 slides), do mesmo jeito;
+ *   · Apresentação V4          — a apresentação oficial, intocada. F11 = tela cheia;
+ *   · Re-meeting               — a V4 reduzida, pra segunda reunião, do mesmo jeito;
  *   · Mapa Interativo de Penha — o mapa 3D, do mesmo jeito, também em F11.
  *
  * A aba escolhida vai pra URL (?aba=), então dá pra mandar o link direto.
@@ -16,27 +16,27 @@ import React, { useEffect, useState } from 'react';
 import Cronograma from './_components/Cronograma';
 import Midias from './_components/Midias';
 import Apresentacao from './_components/Apresentacao';
-import { AYRA_APRESENTACAO_V2, AYRA_APRESENTACAO_V4, AYRA_MAPA } from '@/lib/ayra';
+import { AYRA_APRESENTACAO_V4, AYRA_RE_MEETING, AYRA_MAPA } from '@/lib/ayra';
 
-type Aba = 'cronograma' | 'midias' | 'apresentacao-v2' | 'apresentacao-v4' | 'mapa';
+type Aba = 'cronograma' | 'midias' | 'apresentacao-v4' | 're-meeting' | 'mapa';
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: 'cronograma', rotulo: 'Cronograma do pessoal' },
   { id: 'midias', rotulo: 'Mídias de Apoio' },
-  { id: 'apresentacao-v2', rotulo: 'Apresentação V2' },
   { id: 'apresentacao-v4', rotulo: 'Apresentação V4' },
+  { id: 're-meeting', rotulo: 'Re-meeting' },
   { id: 'mapa', rotulo: 'Mapa Interativo de Penha' },
 ];
 
 const ehAba = (v: string | null): v is Aba =>
-  v === 'cronograma' || v === 'midias' || v === 'apresentacao-v2' || v === 'apresentacao-v4' || v === 'mapa';
+  v === 'cronograma' || v === 'midias' || v === 'apresentacao-v4' || v === 're-meeting' || v === 'mapa';
 
 export default function AyraPage() {
   const [aba, setAba] = useState<Aba>('cronograma');
   // Apresentação e mapa são pesados (vídeos, Cesium): cada um só carrega quando
   // é aberto e depois fica montado — sair e voltar não recomeça do zero.
-  const [v2Montada, setV2Montada] = useState(false);
   const [v4Montada, setV4Montada] = useState(false);
+  const [reMeetingMontada, setReMeetingMontada] = useState(false);
   const [mapaMontado, setMapaMontado] = useState(false);
 
   useEffect(() => {
@@ -45,8 +45,8 @@ export default function AyraPage() {
   }, []);
 
   useEffect(() => {
-    if (aba === 'apresentacao-v2') setV2Montada(true);
     if (aba === 'apresentacao-v4') setV4Montada(true);
+    if (aba === 're-meeting') setReMeetingMontada(true);
     if (aba === 'mapa') setMapaMontado(true);
   }, [aba]);
 
@@ -87,18 +87,18 @@ export default function AyraPage() {
 
       {aba === 'cronograma' && <Cronograma />}
       {aba === 'midias' && <Midias />}
-      {v2Montada && (
-        <Apresentacao
-          ativa={aba === 'apresentacao-v2'}
-          src={AYRA_APRESENTACAO_V2}
-          titulo="Ayra — Apresentação V2"
-        />
-      )}
       {v4Montada && (
         <Apresentacao
           ativa={aba === 'apresentacao-v4'}
           src={AYRA_APRESENTACAO_V4}
           titulo="Ayra — Apresentação V4"
+        />
+      )}
+      {reMeetingMontada && (
+        <Apresentacao
+          ativa={aba === 're-meeting'}
+          src={AYRA_RE_MEETING}
+          titulo="Ayra — Re-meeting"
         />
       )}
       {mapaMontado && (
