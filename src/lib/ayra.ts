@@ -30,6 +30,13 @@ export const AYRA_BASE = '/ayra';
 export const AYRA_APRESENTACAO_V2 = `${AYRA_BASE}/apresentacao-v2/index.html`;
 
 /**
+ * A versão 4 (02/10/2026): a pasta "Ayra - Apresentacao v4 (HTML com videos)",
+ * intocada — 54 slides e 5 vídeos, inclusive o do decorado. O .bat e o
+ * serve.ps1 da pasta original só servem pra abrir no computador e ficaram de fora.
+ */
+export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
+
+/**
  * O Mapa Interativo de Penha: o `dist` do projeto Desktop/mapa-penha (Vite +
  * Cesium), copiado como está. O projeto é buildado com `base: "./"` e acha o
  * Cesium pelo `document.baseURI`, então funciona servido daqui de dentro.
