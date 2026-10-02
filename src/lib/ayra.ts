@@ -37,7 +37,7 @@ export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
  * fica marcado só o Ayra: o terreno da Santer (250 mil m²) saiu. A mudança
  * foi feita na fonte (fonte/make_build5.py, bloco "v5c") e o index.html daqui
  * é o que ela gera — a pasta do Desktop foi atualizada junto.
- * Tem atalhos na lateral direita (bloco "v5d"): Localização (pág. 02),
+ * Tem atalhos na lateral direita (bloco "v5d"): Localização (pág. 01),
  * Produto (11), Decorado (36) e Números (46) — páginas do rodapé.
  */
 export const AYRA_APRESENTACAO_V5 = `${AYRA_BASE}/apresentacao-v5/index.html`;
