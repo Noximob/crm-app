@@ -40,7 +40,8 @@ export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
  * Tem atalhos na lateral direita (bloco "v5d"): Localização, Produto, Decorado
  * e Números — cada um acha o slide pelo título, então resistem a mudança de ordem.
  * Depois: fotos da 13 e da 16 trocadas (v5e) e o Diferencial do Ayra foi pra
- * antes da Renda com locação (v5f).
+ * antes da Renda com locação (v5f). Por fim a 45 virou a defesa da Seazone (v5g,
+ * com a logo deles) e A lógica do aluguel passou a vir logo depois dela.
  */
 export const AYRA_APRESENTACAO_V5 = `${AYRA_BASE}/apresentacao-v5/index.html`;
 
