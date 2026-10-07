@@ -1,8 +1,10 @@
 /**
  * AYRA — o espaço do pré-lançamento (Nox Imóveis × Santer).
  *
- * O cronograma da equipe, as mídias de apoio (as artes de WhatsApp), a
- * apresentação oficial (a V4), a V5, a Re-meeting e o mapa interativo de Penha.
+ * As mídias de apoio (as artes de WhatsApp e o vídeo do decorado), a
+ * apresentação (a V5) e o mapa interativo de Penha. Em 07/10/2026 saíram, a
+ * pedido do gestor, o cronograma do pessoal, a Apresentação V4 e o Re-meeting
+ * (ficam no histórico do git).
  *
  * ONDE MORAM OS ARQUIVOS: em public/ayra, no próprio repositório — vão pro ar
  * junto com o site a cada push, sem upload manual. Não é o Firebase Storage
@@ -22,17 +24,10 @@
 export const AYRA_BASE = '/ayra';
 
 /**
- * A apresentação oficial, versão 4 (02/10/2026): a pasta "Ayra - Apresentacao
- * v4 (HTML com videos)", intocada — 56 slides e 5 vídeos, inclusive o do
- * decorado. O .bat e o serve.ps1 da pasta original só servem pra abrir no
- * computador e ficaram de fora. A primeira apresentação (23/09) e a V2 (02/10)
- * foram apagadas a pedido do gestor — estão no histórico do git.
- */
-export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
-
-/**
- * A versão 5 (02/10/2026): a pasta "Ayra - Apresentacao v5 (HTML com videos)"
- * — 53 slides (capa + 52), mesmas fotos e vídeos da V4 em outra ordem. A
+ * A apresentação, versão 5 (02/10/2026): a pasta "Ayra - Apresentacao v5 (HTML
+ * com videos)" — 53 slides (capa + 52). O .bat e o serve.ps1 da pasta original
+ * só servem pra abrir no computador e ficaram de fora. A primeira apresentação,
+ * a V2 e a V4 foram apagadas a pedido do gestor (estão no histórico do git). A
  * pedido do gestor, nas 2 fotos da localização (Localização e Sistema viário)
  * fica marcado só o Ayra: o terreno da Santer (250 mil m²) saiu. A mudança
  * foi feita na fonte (fonte/make_build5.py, bloco "v5c") e o index.html daqui
@@ -48,24 +43,11 @@ export const AYRA_APRESENTACAO_V4 = `${AYRA_BASE}/apresentacao-v4/index.html`;
 export const AYRA_APRESENTACAO_V5 = `${AYRA_BASE}/apresentacao-v5/index.html`;
 
 /**
- * A Re-meeting: a V4 reduzida, pra segunda reunião — os mesmos slides, sem
- * nenhuma mudança além da numeração (recomeça no 01), em outra ordem: 19, 20,
- * 16, 17, 21, 12, 13, 14 e da 22 ao fim (números da V4).
- * Fica dentro da pasta da V4 pra usar as mesmas fotos e vídeos, e é gerada
- * por `node scripts/ayra-re-meeting.mjs` — mexeu na V4, roda de novo.
- */
-export const AYRA_RE_MEETING = `${AYRA_BASE}/apresentacao-v4/re-meeting.html`;
-
-/**
  * O Mapa Interativo de Penha: o `dist` do projeto Desktop/mapa-penha (Vite +
  * Cesium), copiado como está. O projeto é buildado com `base: "./"` e acha o
  * Cesium pelo `document.baseURI`, então funciona servido daqui de dentro.
  */
 export const AYRA_MAPA = `${AYRA_BASE}/mapa/index.html`;
-
-export const AYRA_AGENDA_PDF = `${AYRA_BASE}/agenda-acao-ayra.pdf`;
-/** O nome com que o PDF sai no download — o mesmo do arquivo aprovado. */
-export const AYRA_AGENDA_PDF_NOME = 'Agenda de acao - Ayra (18-09 a 30-10).pdf';
 
 interface ComPermissoes {
   tipoConta?: string;
@@ -87,8 +69,8 @@ export interface MidiaAyra {
 /**
  * As peças da pasta "Artes WhatsApp - Penha", na ordem dos arquivos.
  * Os títulos são os do "LEGENDAS SUGERIDAS.txt" da mesma pasta. O vídeo do
- * decorado vem PRIMEIRO, a pedido do gestor — é o mesmo arquivo da Apresentação
- * V4 (video/decorado.mp4), pra equipe mandar pros clientes.
+ * decorado vem PRIMEIRO, a pedido do gestor — é o mesmo arquivo da apresentação
+ * (video/decorado.mp4), pra equipe mandar pros clientes.
  */
 export const MIDIAS_AYRA: MidiaAyra[] = [
   { arquivo: '12_decorado_video.mp4', titulo: 'Decorado (vídeo)', tipo: 'video' },

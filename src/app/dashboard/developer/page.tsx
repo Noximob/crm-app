@@ -281,7 +281,7 @@ export default function DeveloperPage() {
                   <th className="px-4 py-3 text-center">Aprovado</th>
                   <th className="px-4 py-3 text-center">Admin</th>
                   <th className="px-4 py-3 text-center" title="Quem enxerga o Setor de Locação — contratos, CPFs e repasses">Locação</th>
-                  <th className="px-4 py-3 text-center" title="Quem enxerga o espaço Ayra — cronograma, mídias e apresentação do pré-lançamento. Quem tem Desenvolvedor já vê.">Ayra</th>
+                  <th className="px-4 py-3 text-center" title="Quem enxerga o espaço Ayra — mídias, apresentação e mapa do pré-lançamento. Quem tem Desenvolvedor já vê.">Ayra</th>
                   <th className="px-4 py-3 text-center">Desenvolvedor</th>
                   <th className="px-4 py-3 text-center">Excluir</th>
                 </tr>
