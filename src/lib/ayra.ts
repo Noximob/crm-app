@@ -52,7 +52,7 @@ export const AYRA_MAPA = `${AYRA_BASE}/mapa/index.html`;
 /**
  * A TV (13/10/2026): fundo de evento — só as fotos inteiras do Ayra (renders da
  * Santer e fotos do decorado) e os vídeos dele (produto, tese e o tour do
- * decorado), passando sozinhos em loop, sem texto de informação. Foto fica 8 s
+ * decorado), passando sozinhos em loop, sem texto de informação. Foto fica 5 s
  * (muda nos controles), vídeo toca inteiro e sem som. Página própria em
  * public/ayra/tv — abre também direto no navegador da TV, sem login.
  */

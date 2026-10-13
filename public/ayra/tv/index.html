@@ -7,14 +7,15 @@
 <!--
   AYRA · TV — fundo de evento: só as fotos inteiras do empreendimento e os vídeos do Ayra, passando sozinhos em
   loop a noite toda. Sem texto de informação na tela.
-  · foto: 8 s (dá pra mudar nos controles), com aproximação lenta e troca em fusão de 1,6 s;
+  · foto: 5 s (pedido do gestor; dá pra mudar nos controles), com aproximação lenta e troca em fusão de 1,6 s;
   · vídeo: toca inteiro, sem som (o botão de som liga), e segue pro próximo;
   · foto ou vídeo fora do formato da TV aparece inteiro, com a própria imagem desfocada preenchendo o fundo;
   · controles aparecem ao mexer o mouse/tocar e somem sozinhos; teclas: espaço pausa, ← → trocam, F tela cheia, M som;
   · pede pra tela não apagar (Wake Lock) enquanto está aberta.
   Fotos: renders da Santer (img/ayra/full da apresentação) e fotos do decorado da central de vendas.
-  Vídeos: AYRA_PRODUTO e AYRA_TESE (Materiais Ayra/2 - VÍDEOS/1 - CONCEITO, convertidos pra Full HD) e o tour do decorado,
-  espalhados no meio das fotos (um a cada ~2 min).
+  Vídeos (todos inteiros): AYRA_PRODUTO e AYRA_TESE (Materiais Ayra/2 - VÍDEOS/1 - CONCEITO, convertidos pra Full HD),
+  e o tour do decorado (o da apresentação, em pé, sobre uma foto do decorado desfocada) — o do Lavitta saiu (longo demais),
+  espalhados no meio das fotos (um a cada ~9 fotos). São 28 fotos (as melhores; 30% a menos que a primeira versão).
 -->
 <style>
   html, body { margin: 0; height: 100%; background: #12061f; overflow: hidden; }
@@ -70,29 +71,28 @@
 </div>
 <script>
 (function () {
-  // A sequência (13/10, pedido do gestor: os vídeos do produto e da tese no meio): os 3 vídeos ficam espalhados,
-  // um a cada ~2 min de fotos — fachadas e lazer, vídeo do PRODUTO, resto do lazer e apartamentos, tour do
-  // decorado, fotos reais do decorado, vídeo da TESE (entre o decorado e as fachadas) — e recomeça.
+  // A sequência (13/10, pedidos do gestor: fotos de 5 s, os vídeos do Ayra inteiros, o Lavitta fora por ser longo
+  // e 30% menos fotos — ficaram as 28 melhores): os 3 vídeos espalhados no meio, um a cada ~9 fotos — fachadas e
+  // lazer, vídeo do PRODUTO, mais lazer e apartamentos, tour do DECORADO, fotos reais do decorado, vídeo da TESE
+  // (entre o decorado e as fachadas) — e recomeça. Uma volta: ~5 min.
   const F = (n) => ({ f: 'fotos/' + n + '.jpg' });
   const LISTA = [
-    F('fachada_crepusculo'), F('aerea_ayra'), F('fachada_diurna'), F('portico_de_entrada'), F('fachada_crepusculo_b'),
-    F('voo_piscinas'), F('piscinas'), F('voo_quadras'), F('beach_tennis'), F('academia'), F('calistenia'), F('playground'),
-    F('brinquedoteca'),
+    F('fachada_crepusculo'), F('aerea_ayra'), F('fachada_diurna'), F('portico_de_entrada'),
+    F('voo_piscinas'), F('piscinas'), F('voo_quadras'), F('beach_tennis'), F('academia'),
     { v: 'videos/ayra_produto.mp4' },
-    F('salao_de_festas'), F('salao_de_jogos_hd'), F('espaco_welness'), F('redario'), F('praca_fogo'),
-    F('area_de_piquenique'), F('pet_place'), F('bwc_familia'), F('coworking'), F('market'), F('lavanderia_coletiva'),
-    F('living_apt_tipo_01'), F('living_apto_tipo_01_bloco_c'), F('dormitorio_apto_tipo_07_bloco_a'), F('giardino_terreo_apto_01_bloco_a'),
+    F('playground'), F('brinquedoteca'), F('salao_de_festas'), F('espaco_welness'), F('redario'), F('praca_fogo'),
+    F('area_de_piquenique'), F('living_apt_tipo_01'), F('giardino_terreo_apto_01_bloco_a'),
     { v: 'videos/decorado.mp4', fundo: 'fotos/decorado_03.jpg' },
-    F('decorado_01'), F('decorado_02'), F('decorado_03'), F('decorado_04'), F('decorado_05'), F('decorado_06'),
-    F('decorado_07'), F('decorado_08'), F('decorado_09'), F('decorado_10'), F('decorado_11'), F('decorado_12'),
+    F('decorado_01'), F('decorado_02'), F('decorado_03'), F('decorado_04'), F('decorado_05'),
+    F('decorado_07'), F('decorado_08'), F('decorado_10'), F('decorado_11'), F('decorado_12'),
     { v: 'videos/ayra_tese.mp4' },
   ];
   const N = LISTA.length, FUSAO = 1600;
-  const TEMPOS = [6, 8, 10, 12, 15];
+  const TEMPOS = [5, 8, 10, 12, 15];
   const guardado = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
   const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem storage: só não lembra */ } };
 
-  let seg = guardado('ayra-tv-seg', 8); if (TEMPOS.indexOf(seg) < 0) seg = 8;
+  let seg = guardado('ayra-tv-tempo', 5); if (TEMPOS.indexOf(seg) < 0) seg = 5;
   let som = false, pausado = false, idx = -1, ativa = 0, geracao = 0, timer = null, guarda = null, prep = null;
   const cenas = [...document.querySelectorAll('.cena')];
   const $ = (id) => document.getElementById(id);
@@ -218,7 +218,7 @@
     desenhar();
   }
   function trocarTempo() {
-    seg = TEMPOS[(TEMPOS.indexOf(seg) + 1) % TEMPOS.length]; guardar('ayra-tv-seg', seg);
+    seg = TEMPOS[(TEMPOS.indexOf(seg) + 1) % TEMPOS.length]; guardar('ayra-tv-tempo', seg);
     avisar(seg + ' segundos por foto'); desenhar();
     if (!cenas[ativa].querySelector('video')) agendarFoto();
   }
