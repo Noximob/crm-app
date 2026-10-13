@@ -2,7 +2,7 @@
  * AYRA — o espaço do pré-lançamento (Nox Imóveis × Santer).
  *
  * As mídias de apoio (as artes de WhatsApp e o vídeo do decorado), a
- * apresentação (a V5) e o mapa interativo de Penha. Em 07/10/2026 saíram, a
+ * apresentação (a V5), o mapa interativo de Penha e a TV. Em 07/10/2026 saíram, a
  * pedido do gestor, o cronograma do pessoal, a Apresentação V4 e o Re-meeting
  * (ficam no histórico do git).
  *
@@ -48,6 +48,15 @@ export const AYRA_APRESENTACAO_V5 = `${AYRA_BASE}/apresentacao-v5/index.html`;
  * Cesium pelo `document.baseURI`, então funciona servido daqui de dentro.
  */
 export const AYRA_MAPA = `${AYRA_BASE}/mapa/index.html`;
+
+/**
+ * A TV (13/10/2026): fundo de evento — só as fotos inteiras do Ayra (renders da
+ * Santer e fotos do decorado) e os vídeos dele (produto, tese e o tour do
+ * decorado), passando sozinhos em loop, sem texto de informação. Foto fica 8 s
+ * (muda nos controles), vídeo toca inteiro e sem som. Página própria em
+ * public/ayra/tv — abre também direto no navegador da TV, sem login.
+ */
+export const AYRA_TV = `${AYRA_BASE}/tv/index.html`;
 
 interface ComPermissoes {
   tipoConta?: string;

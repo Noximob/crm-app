@@ -6,25 +6,27 @@
  * Botões pequenos em cima, e só isso:
  *   · Mídias de Apoio          — as artes de WhatsApp, com pop-up e download;
  *   · Apresentação V5          — a apresentação (53 slides, com atalhos). F11 = tela cheia;
- *   · Mapa Interativo de Penha — o mapa 3D, do mesmo jeito, também em F11.
+ *   · Mapa Interativo de Penha — o mapa 3D, do mesmo jeito, também em F11;
+ *   · TV                       — fotos e vídeos do Ayra passando sozinhos, pra fundo de evento.
  *
  * A aba escolhida vai pra URL (?aba=), então dá pra mandar o link direto.
  */
 import React, { useEffect, useState } from 'react';
 import Midias from './_components/Midias';
 import Apresentacao from './_components/Apresentacao';
-import { AYRA_APRESENTACAO_V5, AYRA_MAPA } from '@/lib/ayra';
+import { AYRA_APRESENTACAO_V5, AYRA_MAPA, AYRA_TV } from '@/lib/ayra';
 
-type Aba = 'midias' | 'apresentacao-v5' | 'mapa';
+type Aba = 'midias' | 'apresentacao-v5' | 'mapa' | 'tv';
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: 'midias', rotulo: 'Mídias de Apoio' },
   { id: 'apresentacao-v5', rotulo: 'Apresentação V5' },
   { id: 'mapa', rotulo: 'Mapa Interativo de Penha' },
+  { id: 'tv', rotulo: 'TV' },
 ];
 
 const ehAba = (v: string | null): v is Aba =>
-  v === 'midias' || v === 'apresentacao-v5' || v === 'mapa';
+  v === 'midias' || v === 'apresentacao-v5' || v === 'mapa' || v === 'tv';
 
 export default function AyraPage() {
   const [aba, setAba] = useState<Aba>('midias');
@@ -92,6 +94,19 @@ export default function AyraPage() {
           src={AYRA_MAPA}
           titulo="Mapa Interativo de Penha"
           dica={<><b className="text-white/80">F11</b> abre o mapa em tela cheia — é assim que ele fica bom pra apresentar</>}
+        />
+      )}
+      {/* A TV só existe enquanto a aba está aberta: fora dela, nada fica tocando escondido. */}
+      {aba === 'tv' && (
+        <Apresentacao
+          ativa
+          src={AYRA_TV}
+          titulo="Ayra — TV"
+          dica={<>
+            <b className="text-white/80">F11</b> põe a TV em tela cheia e ela passa sozinha a noite toda · no evento, dá pra abrir{' '}
+            <a href={AYRA_TV} target="_blank" rel="noopener" className="text-white/80 underline underline-offset-2 hover:text-white">só a TV</a>{' '}
+            direto no navegador da televisão
+          </>}
         />
       )}
     </div>

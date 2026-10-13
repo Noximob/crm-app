@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayra — TV</title>
+<!--
+  AYRA · TV — fundo de evento: só as fotos inteiras do empreendimento e os vídeos do Ayra, passando sozinhos em
+  loop a noite toda. Sem texto de informação na tela.
+  · foto: 8 s (dá pra mudar nos controles), com aproximação lenta e troca em fusão de 1,6 s;
+  · vídeo: toca inteiro, sem som (o botão de som liga), e segue pro próximo;
+  · foto ou vídeo fora do formato da TV aparece inteiro, com a própria imagem desfocada preenchendo o fundo;
+  · controles aparecem ao mexer o mouse/tocar e somem sozinhos; teclas: espaço pausa, ← → trocam, F tela cheia, M som;
+  · pede pra tela não apagar (Wake Lock) enquanto está aberta.
+  Fotos: renders da Santer (img/ayra/full da apresentação) e fotos do decorado da central de vendas.
+  Vídeos: AYRA_PRODUTO e AYRA_TESE (Materiais Ayra/2 - VÍDEOS/1 - CONCEITO, convertidos pra Full HD) e o tour do decorado.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #12061f; overflow: hidden; }
+  body { cursor: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  body.mexendo { cursor: default; }
+  #palco { position: fixed; inset: 0; }
+  .cena { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s ease; overflow: hidden; background: #12061f; }
+  .cena.on { opacity: 1; z-index: 2; }
+  .fundo { position: absolute; inset: -6%; background-size: cover; background-position: center; filter: blur(42px) brightness(.55) saturate(1.1); transform: scale(1.05); }
+  .midia { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .midia img, .midia video { width: 100%; height: 100%; display: block; }
+  .cobre img, .cobre video { object-fit: cover; }
+  .inteira img, .inteira video { object-fit: contain; }
+  /* aproximação lenta (Ken Burns): só nas fotos, começa quando a cena entra */
+  .cena.on .midia.foto { animation: aproxima var(--dur, 11s) linear forwards; }
+  .pausado .cena.on .midia.foto { animation-play-state: paused; }
+  @keyframes aproxima {
+    from { transform: scale(1.0) translate(0, 0); }
+    to   { transform: scale(1.085) translate(var(--dx, 0%), var(--dy, 0%)); }
+  }
+  #marca { position: fixed; right: 3.2vw; bottom: 3.6vh; width: clamp(110px, 9vw, 190px); opacity: .62; z-index: 5; transition: opacity .8s; filter: drop-shadow(0 2px 14px rgba(0,0,0,.45)); pointer-events: none; }
+  body.no-video #marca { opacity: .62; }
+  body.em-video #marca { opacity: 0; }
+  #controles { position: fixed; left: 50%; bottom: 4vh; transform: translate(-50%, 12px); z-index: 10; display: flex; gap: 6px; align-items: center;
+    padding: 8px; border-radius: 999px; background: rgba(20, 6, 40, .62); border: 1px solid rgba(232, 207, 138, .35); backdrop-filter: blur(10px);
+    opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
+  body.mexendo #controles { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  #controles button { all: unset; cursor: pointer; min-width: 44px; height: 44px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font: 600 14px/1 system-ui, sans-serif; letter-spacing: .04em; }
+  #controles button:hover, #controles button:focus-visible { background: rgba(232, 207, 138, .18); color: #E8CF8A; }
+  #controles svg { width: 22px; height: 22px; }
+  #controles .sep { width: 1px; height: 26px; background: rgba(255,255,255,.18); margin: 0 4px; }
+  #aviso { position: fixed; top: 4vh; left: 50%; transform: translateX(-50%); z-index: 10; color: rgba(255,255,255,.8); font: 500 13px/1 system-ui, sans-serif; letter-spacing: .14em;
+    text-transform: uppercase; background: rgba(0,0,0,.4); padding: 10px 16px; border-radius: 999px; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  #aviso.on { opacity: 1; }
+</style>
+</head>
+<body class="no-video">
+<div id="palco">
+  <div class="cena"><div class="fundo"></div><div class="midia"></div></div>
+  <div class="cena"><div class="fundo"></div><div class="midia"></div></div>
+</div>
+<img id="marca" src="ayra_logo.png" alt="">
+<div id="aviso"></div>
+<div id="controles" role="toolbar" aria-label="Controles da TV">
+  <button id="b-ant" title="Anterior (←)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+  <button id="b-pausa" title="Pausar (espaço)" aria-label="Pausar"></button>
+  <button id="b-prox" title="Próxima (→)" aria-label="Próxima"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+  <span class="sep"></span>
+  <button id="b-tempo" title="Tempo de cada foto"></button>
+  <button id="b-som" title="Som dos vídeos (M)" aria-label="Som"></button>
+  <button id="b-cheia" title="Tela cheia (F)" aria-label="Tela cheia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+</div>
+<script>
+(function () {
+  // A sequência: abre com o vídeo do produto, fachadas, lazer, o vídeo da tese, os apartamentos,
+  // o tour do decorado e as fotos reais do decorado — e recomeça.
+  const F = (n) => ({ f: 'fotos/' + n + '.jpg' });
+  const LISTA = [
+    { v: 'videos/ayra_produto.mp4' },
+    F('fachada_crepusculo'), F('aerea_ayra'), F('fachada_diurna'), F('portico_de_entrada'), F('fachada_crepusculo_b'),
+    F('voo_piscinas'), F('piscinas'), F('voo_quadras'), F('beach_tennis'), F('academia'), F('calistenia'), F('playground'),
+    F('brinquedoteca'), F('salao_de_festas'), F('salao_de_jogos_hd'), F('espaco_welness'), F('redario'), F('praca_fogo'),
+    F('area_de_piquenique'), F('pet_place'), F('bwc_familia'), F('coworking'), F('market'), F('lavanderia_coletiva'),
+    { v: 'videos/ayra_tese.mp4' },
+    F('living_apt_tipo_01'), F('living_apto_tipo_01_bloco_c'), F('dormitorio_apto_tipo_07_bloco_a'), F('giardino_terreo_apto_01_bloco_a'),
+    { v: 'videos/decorado.mp4', fundo: 'fotos/decorado_03.jpg' },
+    F('decorado_01'), F('decorado_02'), F('decorado_03'), F('decorado_04'), F('decorado_05'), F('decorado_06'),
+    F('decorado_07'), F('decorado_08'), F('decorado_09'), F('decorado_10'), F('decorado_11'), F('decorado_12'),
+  ];
+  const N = LISTA.length, FUSAO = 1600;
+  const TEMPOS = [6, 8, 10, 12, 15];
+  const guardado = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem storage: só não lembra */ } };
+
+  let seg = guardado('ayra-tv-seg', 8); if (TEMPOS.indexOf(seg) < 0) seg = 8;
+  let som = false, pausado = false, idx = -1, ativa = 0, geracao = 0, timer = null, guarda = null, prep = null;
+  const cenas = [...document.querySelectorAll('.cena')];
+  const $ = (id) => document.getElementById(id);
+  const MOV = [['-2%', '-1.5%'], ['2%', '-1%'], ['-1.5%', '1.5%'], ['1.8%', '1.2%'], ['0%', '-2%']];
+
+  function limpar(c) {
+    const v = c.querySelector('video');
+    if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+    c.querySelector('.midia').innerHTML = '';
+    c.querySelector('.midia').className = 'midia';
+    c.querySelector('.fundo').style.backgroundImage = '';
+  }
+  const comPrazo = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(false), ms))]);
+
+  // Monta o item numa cena escondida e resolve true quando ele já pode aparecer sem tela preta.
+  function montar(c, it, i) {
+    limpar(c);
+    const m = c.querySelector('.midia'), fundo = c.querySelector('.fundo');
+    if (it.f) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.alt = '';
+      const pronto = new Promise((res) => { img.onload = () => res(true); img.onerror = () => res(false); });
+      img.src = it.f;
+      // carregou = pode entrar; o decode() só ganha um tempinho (em aba escondida o navegador adia e ele não volta)
+      return comPrazo(pronto.then((ok) => ok && comPrazo(img.decode().then(() => true, () => true), 1500).then(() => true)), 20000).then((ok) => {
+        if (!ok) return false;
+        const r = img.naturalWidth / img.naturalHeight;
+        const cobre = r >= 1.45 && r <= 2.1;
+        m.classList.add('foto', cobre ? 'cobre' : 'inteira');
+        if (!cobre) fundo.style.backgroundImage = 'url("' + it.f + '")';
+        const [dx, dy] = MOV[i % MOV.length];
+        m.style.setProperty('--dx', dx); m.style.setProperty('--dy', dy);
+        m.style.setProperty('--dur', (seg + 2 * FUSAO / 1000) + 's');
+        m.appendChild(img);
+        return true;
+      });
+    }
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+    const pronto = new Promise((res) => {
+      v.addEventListener('loadeddata', () => res(true), { once: true });
+      v.addEventListener('error', () => res(false), { once: true });
+    });
+    v.src = it.v;
+    m.appendChild(v);
+    return comPrazo(pronto, 30000).then((ok) => {
+      if (!ok) return false;
+      const r = v.videoWidth / v.videoHeight;
+      const cobre = r >= 1.7 && r <= 1.85;
+      m.classList.add(cobre ? 'cobre' : 'inteira');
+      if (!cobre && it.fundo) fundo.style.backgroundImage = 'url("' + it.fundo + '")';
+      return true;
+    });
+  }
+
+  function preparar(i) {
+    const c = cenas[1 - ativa];
+    prep = { i, c, p: montar(c, LISTA[i], i) };
+    return prep;
+  }
+
+  function agendarFoto() {
+    clearTimeout(timer);
+    if (!pausado) timer = setTimeout(() => ir(idx + 1), seg * 1000);
+  }
+
+  async function ir(i) {
+    const g = ++geracao;
+    clearTimeout(timer); clearTimeout(guarda);
+    i = ((i % N) + N) % N;
+    let pr = prep && prep.i === i ? prep : preparar(i);
+    let ok = await pr.p, tentativas = 0;
+    while (!ok && tentativas < N) {          // item que não carregou: pula pro seguinte
+      if (g !== geracao) return;
+      i = (i + 1) % N; tentativas++;
+      pr = preparar(i); ok = await pr.p;
+    }
+    if (g !== geracao) return;
+    if (!ok) { timer = setTimeout(() => ir(i), 10000); return; }   // sem rede: tenta de novo daqui a pouco
+
+    const velha = cenas[ativa];
+    idx = i; ativa = cenas.indexOf(pr.c); prep = null;
+    const v = pr.c.querySelector('video');
+    document.body.classList.toggle('em-video', !!v);
+    document.body.classList.toggle('no-video', !v);
+    pr.c.classList.add('on'); velha.classList.remove('on');
+
+    if (v) {
+      v.muted = !som; v.currentTime = 0;
+      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+      v.onended = () => { if (g === geracao) ir(idx + 1); };
+      const total = (isFinite(v.duration) && v.duration > 0 ? v.duration : 90) + 8;   // vídeo travado não segura a TV
+      guarda = setTimeout(() => { if (g === geracao && !pausado) ir(idx + 1); }, total * 1000);
+      if (pausado) v.pause();
+    } else {
+      agendarFoto();
+    }
+    setTimeout(() => { if (g === geracao) { limpar(velha); preparar((idx + 1) % N); } }, FUSAO + 120);
+  }
+
+  // ---------- controles ----------
+  const ICO = {
+    pausa: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    somOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>',
+    somOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>',
+  };
+  let avisoT;
+  function avisar(t) { const a = $('aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), 1800); }
+  function desenhar() {
+    $('b-pausa').innerHTML = pausado ? ICO.play : ICO.pausa;
+    $('b-pausa').title = pausado ? 'Continuar (espaço)' : 'Pausar (espaço)';
+    $('b-tempo').textContent = seg + ' s';
+    $('b-som').innerHTML = som ? ICO.somOn : ICO.somOff;
+    document.body.classList.toggle('pausado', pausado);
+  }
+  function alternarPausa() {
+    pausado = !pausado;
+    const v = cenas[ativa].querySelector('video');
+    if (pausado) { clearTimeout(timer); clearTimeout(guarda); if (v) v.pause(); avisar('pausado'); }
+    else { if (v) v.play().catch(() => {}); else agendarFoto(); avisar('passando'); }
+    desenhar();
+  }
+  function trocarTempo() {
+    seg = TEMPOS[(TEMPOS.indexOf(seg) + 1) % TEMPOS.length]; guardar('ayra-tv-seg', seg);
+    avisar(seg + ' segundos por foto'); desenhar();
+    if (!cenas[ativa].querySelector('video')) agendarFoto();
+  }
+  function alternarSom() {
+    som = !som; const v = cenas[ativa].querySelector('video'); if (v) v.muted = !som;
+    avisar(som ? 'som ligado' : 'sem som'); desenhar();
+  }
+  function telaCheia() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else (document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : Promise.reject()).catch(() => {});
+  }
+  const parar = (fn) => (e) => { e.stopPropagation(); fn(); e.currentTarget.blur(); mexeu(); };
+  $('b-ant').onclick = parar(() => ir(idx - 1));
+  $('b-prox').onclick = parar(() => ir(idx + 1));
+  $('b-pausa').onclick = parar(alternarPausa);
+  $('b-tempo').onclick = parar(trocarTempo);
+  $('b-som').onclick = parar(alternarSom);
+  $('b-cheia').onclick = parar(telaCheia);
+  addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'k') { e.preventDefault(); alternarPausa(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); ir(idx + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); ir(idx - 1); }
+    else if (e.key === 'f' || e.key === 'F') telaCheia();
+    else if (e.key === 'm' || e.key === 'M') alternarSom();
+    mexeu();
+  });
+
+  let mexT;
+  function mexeu() { document.body.classList.add('mexendo'); clearTimeout(mexT); mexT = setTimeout(() => document.body.classList.remove('mexendo'), 3000); }
+  addEventListener('mousemove', mexeu);
+  addEventListener('touchstart', mexeu, { passive: true });
+  addEventListener('click', mexeu);
+
+  // ---------- tela acesa a noite toda ----------
+  let trava = null;
+  async function travarTela() {
+    try { if ('wakeLock' in navigator && document.visibilityState === 'visible') { trava = await navigator.wakeLock.request('screen'); } } catch (e) { /* sem suporte: segue */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') travarTela(); });
+  travarTela();
+
+  desenhar();
+  ir(0);
+})();
+</script>
+</body>
+</html>
