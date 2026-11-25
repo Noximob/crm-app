@@ -1,3 +1,5 @@
 # Ayra: material aprovado do pré-lançamento — sem conversão de fim de linha,
 # sai no ar byte a byte igual à pasta original
 public/ayra/** -text
+# Captação Penha: a base sai do motor (Desktop/Captação Penha) um imóvel por linha — sem conversão de fim de linha
+public/captacao-penha/** -text

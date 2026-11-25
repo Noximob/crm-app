@@ -26,6 +26,13 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
 
+# Captação Penha: a base de imóveis (public/captacao-penha/dados.json) é de uso
+# interno — fora dos buscadores.
+[[headers]]
+  for = "/captacao-penha/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 [dev]
   command = "npm run dev"
   port = 3000
